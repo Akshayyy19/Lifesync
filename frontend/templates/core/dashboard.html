@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+
+{% block hero %}
+<div class="hero-band" style="padding: 1.75rem 0 2.25rem;">
+  <div class="container">
+    <h1 class="font-display" style="font-size:1.9rem;">Hi {{ user.username }}, here's your {{ today|date:"l" }}</h1>
+    <p style="font-size:1rem;">{{ today|date:"d F Y" }}</p>
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+
+  <div class="col-lg-4">
+    <div class="card p-3 h-100">
+      <div class="card-body">
+        <h2 class="h6 text-uppercase text-muted-soft font-mono" style="letter-spacing:.06em;">Weather in {{ user.profile.city }}</h2>
+        {% if weather %}
+        <div class="weather-glance mt-2">
+          <i class="bi bi-{% if weather.condition == 'sunny' %}sun-fill{% elif weather.condition == 'clear-night' %}moon-stars-fill{% elif weather.condition == 'rainy' %}cloud-rain-fill{% elif weather.condition == 'snowy' %}snow{% elif weather.condition == 'thunderstorm' %}cloud-lightning-rain-fill{% elif weather.condition == 'misty' %}cloud-haze2-fill{% else %}cloud-fill{% endif %}" style="font-size:2.75rem; color:var(--accent-ink);"></i>
+          <div>
+            <div class="temp">{{ weather.temp }}&deg;C</div>
+            <div class="desc">{{ weather.description }}</div>
+          </div>
+        </div>
+        <div class="d-flex gap-3 mt-3 small text-muted-soft">
+          <span><i class="bi bi-droplet-half"></i> {{ weather.humidity }}%</span>
+          <span><i class="bi bi-wind"></i> {{ weather.wind_speed }} m/s</span>
+          <span><i class="bi bi-thermometer-half"></i> feels {{ weather.feels_like }}&deg;</span>
+        </div>
+        {% else %}
+        <p class="text-muted-soft small mt-2 mb-0">Weather isn't available right now — check your API key in <code>.env</code>, or search a city on the Weather page.</p>
+        {% endif %}
+        <a href="{% url 'weather:index' %}" class="btn btn-outline-primary btn-sm mt-3">Full forecast</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-8">
+    <div class="card p-3 h-100">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center">
+          <h2 class="h6 text-uppercase text-muted-soft font-mono mb-2" style="letter-spacing:.06em;">Today</h2>
+          <a href="{% url 'planner:event_create' %}?date={{ today|date:'Y-m-d' }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-plus-lg"></i> Add</a>
+        </div>
+
+        {% if todays_events or todays_birthdays %}
+        <div class="today-strip">
+          {% for e in todays_birthdays %}
+          <a href="{% url 'planner:day_detail' today.year today.month today.day %}" class="chip chip-birthday"><i class="bi bi-gift"></i> {{ e.title }}'s birthday</a>
+          {% endfor %}
+          {% for e in todays_events %}
+          <a href="{% url 'planner:day_detail' today.year today.month today.day %}" class="chip {{ e.badge_class }}">
+            <i class="bi bi-{% if e.category == 'reminder' %}bell{% else %}calendar-event{% endif %}"></i>
+            {{ e.title }}{% if e.time %} &middot; {{ e.time|time:"g:i A" }}{% endif %}
+          </a>
+          {% endfor %}
+        </div>
+        {% else %}
+        <p class="text-muted-soft small mb-0">Nothing scheduled today. Enjoy the calm.</p>
+        {% endif %}
+
+        {% if upcoming_events %}
+        <h2 class="h6 text-uppercase text-muted-soft font-mono mt-4 mb-2" style="letter-spacing:.06em;">Coming up this week</h2>
+        <ul class="list-group list-group-flush">
+          {% for e in upcoming_events %}
+          <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+            <span><span class="dot dot-{{ e.category }} me-2"></span>{{ e.title }}</span>
+            <span class="text-muted-soft small font-mono">{{ e.date|date:"D, d M" }}</span>
+          </li>
+          {% endfor %}
+        </ul>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-6">
+    <div class="card p-3 h-100">
+      <div class="card-body">
+        <h2 class="h6 text-uppercase text-muted-soft font-mono mb-2" style="letter-spacing:.06em;">Diary</h2>
+        {% if has_entry_today %}
+        <p class="mb-2"><i class="bi bi-check-circle text-success"></i> You've already written today's entry.</p>
+        {% else %}
+        <p class="text-muted-soft small mb-2">You haven't written today's entry yet.</p>
+        {% endif %}
+        {% if latest_entry %}
+        <div class="p-3 rounded" style="background:var(--surface-alt);">
+          <div class="entry-date font-mono">{{ latest_entry.date|date:"d M Y" }}{% if latest_entry.mood %} &middot; {{ latest_entry.get_mood_display }}{% endif %}</div>
+          <p class="mb-0 mt-1 small">{{ latest_entry.content|truncatewords:22 }}</p>
+        </div>
+        {% endif %}
+        <a href="{% url 'diary:create' %}" class="btn btn-sky-cta btn-sm mt-3"><i class="bi bi-pencil"></i> Write an entry</a>
+        <a href="{% url 'diary:list' %}" class="btn btn-outline-primary btn-sm mt-3">View all</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-6">
+    <div class="card p-3 h-100">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <h2 class="h6 text-uppercase text-muted-soft font-mono mb-0" style="letter-spacing:.06em;">Notifications</h2>
+          <a href="{% url 'notifications:list' %}" class="small">See all</a>
+        </div>
+        {% if recent_notifications %}
+        {% for n in recent_notifications %}
+        <div class="notification-item unread py-2">
+          <div class="icon-wrap"><i class="bi {{ n.icon_class }}"></i></div>
+          <div class="small">{{ n.message }}</div>
+        </div>
+        {% endfor %}
+        {% else %}
+        <p class="text-muted-soft small mb-0">You're all caught up.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

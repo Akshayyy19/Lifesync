@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+{% block title %}{{ date|date:"d M Y" }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <div>
+    <a href="{% url 'planner:calendar_month' date.year date.month %}" class="text-muted-soft small"><i class="bi bi-arrow-left"></i> Back to {{ date|date:"F Y" }}</a>
+    <h1 class="h3 mt-1 mb-0">{{ date|date:"l, d F Y" }}</h1>
+  </div>
+  <a href="{% url 'planner:event_create' %}?date={{ date|date:'Y-m-d' }}" class="btn btn-sky-cta"><i class="bi bi-plus-lg"></i> Add to this day</a>
+</div>
+
+{% if day_timeline %}
+<div class="card p-3 mb-4 border-0 shadow-sm" style="background: linear-gradient(135deg, var(--surface-alt), rgba(255,255,255,0.05)); border-radius: 12px;">
+  <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
+    <div class="d-flex align-items-center gap-3">
+      <i class="bi bi-{% if day_timeline.condition == 'sunny' %}sun-fill{% elif day_timeline.condition == 'clear-night' %}moon-stars-fill{% elif day_timeline.condition == 'rainy' %}cloud-rain-fill{% elif day_timeline.condition == 'snowy' %}snow{% elif day_timeline.condition == 'thunderstorm' %}cloud-lightning-rain-fill{% elif day_timeline.condition == 'misty' %}cloud-haze2-fill{% else %}cloud-fill{% endif %}" style="font-size: 2.2rem; color: var(--accent-ink);"></i>
+      <div>
+        <div class="fw-semibold" style="font-size: 1.1rem;">Weather in {{ city }}</div>
+        <div class="text-muted-soft small"><strong>{{ day_timeline.temp_avg }}&deg;C</strong> ({{ day_timeline.temp_min }}&deg; &ndash; {{ day_timeline.temp_max }}&deg;) &middot; {{ day_timeline.description }}</div>
+      </div>
+    </div>
+    {% if day_timeline.is_past %}
+    <span class="badge bg-secondary font-mono px-2 py-1"><i class="bi bi-archive"></i> Past Historical Weather</span>
+    {% elif day_timeline.is_today %}
+    <span class="badge bg-success font-mono px-2 py-1"><i class="bi bi-brightness-high"></i> Today's Live Weather</span>
+    {% else %}
+    <span class="badge bg-info text-dark font-mono px-2 py-1"><i class="bi bi-calendar-event"></i> Forecast Prediction</span>
+    {% endif %}
+  </div>
+
+  <div class="d-flex gap-2 overflow-auto pt-2 pb-1" style="scrollbar-width: thin;">
+    {% for slot in day_timeline.timeline %}
+    <div class="text-center p-2 rounded" style="min-width: 80px; background: rgba(0,0,0,0.03);">
+      <div class="font-mono small text-muted-soft" style="font-size: 0.75rem;">{{ slot.time }}</div>
+      <i class="bi bi-{% if slot.condition == 'sunny' %}sun-fill{% elif slot.condition == 'clear-night' %}moon-stars-fill{% elif slot.condition == 'rainy' %}cloud-rain-fill{% elif slot.condition == 'snowy' %}snow{% elif slot.condition == 'thunderstorm' %}cloud-lightning-rain-fill{% elif slot.condition == 'misty' %}cloud-haze2-fill{% else %}cloud-fill{% endif %}" style="font-size: 1.2rem; color: var(--accent-ink); margin: 0.2rem 0; display: block;"></i>
+      <div class="fw-bold small">{{ slot.temp }}&deg;C</div>
+      <div class="small text-muted-soft font-mono" style="font-size: 0.7rem;"><i class="bi bi-wind"></i> {{ slot.wind_speed }}</div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+{% if birthdays %}
+<h2 class="h6 text-uppercase text-muted-soft font-mono mb-2" style="letter-spacing:.06em;">Birthdays</h2>
+{% for e in birthdays %}
+<div class="card p-3 mb-2">
+  <div class="d-flex justify-content-between align-items-center">
+    <div>
+      <i class="bi bi-gift" style="color:var(--cat-birthday)"></i> <strong>{{ e.title }}</strong>
+      {% if e.weather_temp is not None %}
+        <span class="badge bg-light text-dark ms-2 font-mono" title="{{ e.weather_condition }}"><i class="bi bi-cloud-sun"></i> {{ e.weather_temp }}&deg;C</span>
+      {% endif %}
+      {% if e.description %}<div class="text-muted-soft small">{{ e.description }}</div>{% endif %}
+    </div>
+    <div class="d-flex gap-2">
+      <a href="{% url 'planner:event_update' e.pk %}" class="btn btn-sm btn-outline-primary">Edit</a>
+      <a href="{% url 'planner:event_delete' e.pk %}" class="btn btn-sm btn-outline-danger">Delete</a>
+    </div>
+  </div>
+</div>
+{% endfor %}
+{% endif %}
+
+{% if events %}
+<h2 class="h6 text-uppercase text-muted-soft font-mono mb-2 mt-3" style="letter-spacing:.06em;">Events &amp; reminders</h2>
+{% for e in events %}
+<div class="card p-3 mb-2">
+  <div class="d-flex justify-content-between align-items-start">
+    <div>
+      <span class="chip {{ e.badge_class }} mb-1"><i class="bi bi-{% if e.category == 'reminder' %}bell{% else %}calendar-event{% endif %}"></i> {{ e.get_category_display }}</span>
+      {% if e.weather_temp is not None %}
+      <span class="badge bg-light text-dark ms-1 font-mono" title="{{ e.weather_condition }}"><i class="bi bi-cloud-sun"></i> {{ e.weather_temp }}&deg;C &middot; {{ e.weather_condition }}</span>
+      {% endif %}
+      <div><strong>{{ e.title }}</strong>{% if e.time %} <span class="text-muted-soft font-mono small">{{ e.time|time:"g:i A" }}</span>{% endif %}</div>
+      {% if e.location %}<div class="text-muted-soft small"><i class="bi bi-geo-alt"></i> {{ e.location }}</div>{% endif %}
+      {% if e.description %}<p class="small mb-0 mt-1">{{ e.description }}</p>{% endif %}
+    </div>
+    <div class="d-flex gap-2">
+      <a href="{% url 'planner:event_update' e.pk %}" class="btn btn-sm btn-outline-primary">Edit</a>
+      <a href="{% url 'planner:event_delete' e.pk %}" class="btn btn-sm btn-outline-danger">Delete</a>
+    </div>
+  </div>
+</div>
+{% endfor %}
+{% endif %}
+
+{% if not birthdays and not events %}
+<div class="empty-state">
+  <i class="bi bi-calendar2-week"></i>
+  <p>Nothing on this day yet.</p>
+  <a href="{% url 'planner:event_create' %}?date={{ date|date:'Y-m-d' }}" class="btn btn-sky-cta">Add something</a>
+</div>
+{% endif %}
+{% endblock %}

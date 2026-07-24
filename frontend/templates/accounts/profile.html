@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Profile settings{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-6">
+    <div class="card p-4 mt-4">
+      <div class="card-body">
+        <h1 class="h3 mb-1">Profile settings</h1>
+        <p class="text-muted-soft mb-4">Signed in as <strong>{{ user.username }}</strong> ({{ user.email|default:"no email on file" }})</p>
+
+        <form method="post">
+          {% csrf_token %}
+          <div class="mb-3">
+            <label class="form-label" for="{{ form.city.id_for_label }}">Default city</label>
+            {{ form.city }}
+            <div class="form-text">{{ form.city.help_text }}</div>
+          </div>
+          <div class="mb-4">
+            <label class="form-label" for="{{ form.theme_preference.id_for_label }}">Theme</label>
+            {{ form.theme_preference }}
+            <div class="form-text">"Automatic" follows your device's local time — daytime colours by day, a calmer palette after dark.</div>
+          </div>
+          <button type="submit" class="btn btn-sky-cta">Save changes</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

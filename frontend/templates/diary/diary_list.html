@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Diary{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h1 class="h3 mb-0">Your diary</h1>
+  <a href="{% url 'diary:create' %}" class="btn btn-sky-cta"><i class="bi bi-pencil"></i> New entry</a>
+</div>
+
+{% if entries %}
+<div class="row g-3">
+  {% for entry in entries %}
+  <div class="col-md-6">
+    <a href="{% url 'diary:detail' entry.pk %}" class="text-decoration-none">
+      <div class="card p-3 h-100" style="border-left: 4px solid var(--accent);">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-start">
+            <span class="entry-date font-mono">{{ entry.date|date:"D, d M Y" }}</span>
+            {% if entry.mood %}<span class="mood-pill">{{ entry.get_mood_display }}</span>{% endif %}
+          </div>
+          <h2 class="h5 mt-2 mb-1" style="color:var(--ink);">{{ entry.display_title }}</h2>
+          <p class="text-muted-soft small mb-0">{{ entry.content|truncatewords:24 }}</p>
+          {% if entry.weather_condition %}
+          <p class="text-muted-soft small mb-0 mt-2"><i class="bi bi-cloud-sun"></i> {{ entry.weather_temp|floatformat:0 }}&deg;C, {{ entry.weather_condition }}</p>
+          {% endif %}
+        </div>
+      </div>
+    </a>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="empty-state">
+  <i class="bi bi-journal-richtext"></i>
+  <p>No entries yet. Your first page is waiting.</p>
+  <a href="{% url 'diary:create' %}" class="btn btn-sky-cta">Write your first entry</a>
+</div>
+{% endif %}
+{% endblock %}

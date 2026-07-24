@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block title %}Welcome{% endblock %}
+
+{% block hero %}
+<div class="hero-band">
+  <div class="container">
+    <h1 class="font-display">One sky. One place for your whole day.</h1>
+    <p>LifeSync brings your calendar, diary and the weather outside into a single, living dashboard —
+       so planning your day means glancing at one screen, not four apps.</p>
+    <a href="{% url 'accounts:register' %}" class="btn btn-sky-cta btn-lg mt-3">Get started — it's free</a>
+    <a href="{% url 'accounts:login' %}" class="btn btn-outline-light btn-lg mt-3 ms-2">Log in</a>
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="row g-4 py-4">
+  <div class="col-md-3 col-6">
+    <div class="card h-100 text-center p-3">
+      <div class="card-body">
+        <i class="bi bi-calendar3 fs-1" style="color:var(--cat-event)"></i>
+        <h3 class="h5 mt-2">Smart calendar</h3>
+        <p class="text-muted-soft small mb-0">Events, birthdays and reminders on one interactive month view.</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3 col-6">
+    <div class="card h-100 text-center p-3">
+      <div class="card-body">
+        <i class="bi bi-journal-richtext fs-1" style="color:var(--accent-ink)"></i>
+        <h3 class="h5 mt-2">Daily diary</h3>
+        <p class="text-muted-soft small mb-0">Capture your day and your mood — each entry even remembers the weather.</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3 col-6">
+    <div class="card h-100 text-center p-3">
+      <div class="card-body">
+        <i class="bi bi-cloud-sun fs-1" style="color:var(--cat-reminder)"></i>
+        <h3 class="h5 mt-2">Live weather</h3>
+        <p class="text-muted-soft small mb-0">Real-time conditions and a 5-day forecast for any city.</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3 col-6">
+    <div class="card h-100 text-center p-3">
+      <div class="card-body">
+        <i class="bi bi-bell fs-1" style="color:var(--cat-birthday)"></i>
+        <h3 class="h5 mt-2">Smart reminders</h3>
+        <p class="text-muted-soft small mb-0">Automatic nudges for what's coming up today and tomorrow.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row align-items-center mt-3 mb-5">
+  <div class="col-lg-6">
+    <h2>A theme that changes with the sky</h2>
+    <p class="text-muted-soft">
+      LifeSync's interface genuinely shifts through the day — warm daylight tones in the afternoon,
+      a calm night palette after dark, and light animation for whatever's happening outside:
+      drifting clouds, falling rain, or a quiet field of stars.
+    </p>
+  </div>
+  <div class="col-lg-6">
+    <div class="d-flex gap-3 justify-content-center">
+      <div class="chip chip-event"><i class="bi bi-calendar-event"></i> Event</div>
+      <div class="chip chip-birthday"><i class="bi bi-gift"></i> Birthday</div>
+      <div class="chip chip-reminder"><i class="bi bi-bell"></i> Reminder</div>
+    </div>
+  </div>
+</div>
+{% endblock %}

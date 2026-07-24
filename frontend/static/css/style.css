@@ -1,0 +1,392 @@
+/* ==========================================================================
+   LifeSync — Premium Modern Design Tokens
+   Vibrant colors, glassmorphism, and a dynamic living sky.
+   ========================================================================== */
+
+:root {
+  /* Premium Day Tokens */
+  --sky-top: #3b82f6; /* Vibrant Blue */
+  --sky-mid: #60a5fa;
+  --sky-horizon: #bfdbfe;
+  
+  --surface: rgba(255, 255, 255, 0.7); /* Frosted Glass */
+  --surface-solid: #ffffff;
+  --surface-alt: #f1f5f9;
+  --ink: #0f172a;
+  --ink-soft: #475569;
+  
+  --accent: #f59e0b;
+  --accent-ink: #ffffff;
+  --line: rgba(255, 255, 255, 0.4);
+
+  --cat-event: #3b82f6;
+  --cat-birthday: #ec4899;
+  --cat-reminder: #10b981;
+
+  --font-display: 'Outfit', system-ui, sans-serif;
+  --font-body: 'Inter', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Courier New', monospace;
+
+  --radius-sm: 12px;
+  --radius-md: 20px;
+  --radius-lg: 32px;
+  --shadow-soft: 0 10px 30px -10px rgba(0, 0, 0, 0.1);
+  --glass-blur: blur(16px);
+}
+
+body.theme-night {
+  /* Premium Night Tokens */
+  --sky-top: #020617;
+  --sky-mid: #0f172a;
+  --sky-horizon: #1e293b;
+  
+  --surface: rgba(15, 23, 42, 0.65); /* Frosted Dark Glass */
+  --surface-solid: #0f172a;
+  --surface-alt: #1e293b;
+  --ink: #f8fafc;
+  --ink-soft: #94a3b8;
+  
+  --accent: #f59e0b;
+  --accent-ink: #0f172a;
+  --line: rgba(255, 255, 255, 0.08);
+
+  --cat-event: #60a5fa;
+  --cat-birthday: #f472b6;
+  --cat-reminder: #34d399;
+  --shadow-soft: 0 15px 40px -10px rgba(0, 0, 0, 0.6);
+}
+
+/* ==========================================================================
+   Base
+   ========================================================================== */
+
+html, body { min-height: 100%; }
+
+body {
+  background: var(--surface-alt);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 1rem;
+  line-height: 1.7;
+  transition: background-color 0.8s cubic-bezier(0.4, 0, 0.2, 1), color 0.4s ease;
+  overflow-x: hidden;
+}
+
+h1, h2, h3, h4, .font-display {
+  font-family: var(--font-display);
+  color: var(--ink);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+h1 { font-size: 2.75rem; }
+h2 { font-size: 1.85rem; }
+h3 { font-size: 1.35rem; }
+
+a { color: var(--cat-event); text-decoration: none; transition: all 0.2s ease; }
+a:hover { color: var(--accent); }
+
+.text-muted-soft { color: var(--ink-soft) !important; }
+.font-mono { font-family: var(--font-mono); letter-spacing: -0.02em; }
+
+/* ==========================================================================
+   Bootstrap Re-skin (Glassmorphism & Premium UI)
+   ========================================================================== */
+
+.btn {
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+  padding: 0.65rem 1.4rem;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn-primary, .btn-sky-cta {
+  background: linear-gradient(135deg, var(--accent), #f97316);
+  border: none;
+  color: #fff !important;
+  box-shadow: 0 4px 15px rgba(245, 158, 11, 0.4);
+}
+.btn-primary:hover, .btn-sky-cta:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(245, 158, 11, 0.6);
+  background: linear-gradient(135deg, #f97316, var(--accent));
+}
+
+.form-control, .form-select {
+  background-color: var(--surface);
+  border: 1px solid var(--line);
+  color: var(--ink);
+  border-radius: var(--radius-sm);
+  padding: 0.75rem 1rem;
+  backdrop-filter: var(--glass-blur);
+  transition: all 0.3s ease;
+}
+.form-control:focus, .form-select:focus {
+  background-color: var(--surface-solid);
+  color: var(--ink);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.15);
+  transform: translateY(-1px);
+}
+.form-control::placeholder { color: var(--ink-soft); opacity: 0.6; }
+label, .form-label { font-weight: 600; font-family: var(--font-display); color: var(--ink); margin-bottom: 0.5rem; }
+
+/* Glass Cards */
+.card {
+  background: var(--surface);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-soft);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  overflow: hidden;
+}
+.card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 15px 35px -10px rgba(0, 0, 0, 0.15);
+}
+.card-header {
+  background-color: transparent;
+  border-bottom: 1px solid var(--line);
+  font-family: var(--font-display);
+  font-weight: 700;
+  padding: 1.25rem 1.5rem;
+}
+
+/* Glass Dropdown */
+.dropdown-menu {
+  background: var(--surface);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 15px 40px rgba(0,0,0,0.15);
+  padding: 0.5rem;
+}
+.dropdown-item { color: var(--ink); border-radius: 8px; margin: 0.2rem 0; font-weight: 500; transition: all 0.2s; }
+.dropdown-item:hover { background: var(--accent); color: #fff; transform: translateX(4px); }
+
+/* Alerts */
+.alert { border-radius: var(--radius-sm); border: 1px solid var(--line); backdrop-filter: var(--glass-blur); }
+.alert-success { background: rgba(16, 185, 129, 0.15); color: var(--ink); border-left: 4px solid #10b981; }
+.alert-info     { background: rgba(59, 130, 246, 0.15); color: var(--ink); border-left: 4px solid #3b82f6; }
+.alert-warning  { background: rgba(245, 158, 11, 0.15); color: var(--ink); border-left: 4px solid #f59e0b; }
+.alert-danger   { background: rgba(239, 68, 68, 0.15); color: var(--ink); border-left: 4px solid #ef4444; }
+
+/* ==========================================================================
+   Sky Header (Glass Navbar + Deep Sky Gradients)
+   ========================================================================== */
+
+.sky-header {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(180deg, var(--sky-top) 0%, var(--sky-mid) 40%, var(--sky-horizon) 100%);
+  transition: background 1.2s cubic-bezier(0.4, 0, 0.2, 1);
+  padding-bottom: 2rem;
+  box-shadow: inset 0 -20px 40px -20px rgba(0,0,0,0.1);
+}
+
+.sky-scene {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.sky-navbar {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  padding: 1rem 0;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(255,255,255,0.15);
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.05);
+}
+.sky-navbar .navbar-brand {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 1.5rem;
+  color: #fff;
+  letter-spacing: -0.03em;
+  text-shadow: 0 2px 10px rgba(0,0,0,0.3);
+}
+.sky-navbar .nav-link {
+  color: rgba(255,255,255,0.85);
+  font-weight: 600;
+  font-family: var(--font-display);
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+.sky-navbar .nav-link:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.15);
+  transform: translateY(-1px);
+}
+.sky-navbar .dropdown-toggle::after { display: none; }
+
+.notif-badge {
+  position: absolute;
+  top: 0;
+  right: -2px;
+  background-color: var(--cat-birthday);
+  color: #fff;
+  font-size: .65rem;
+  padding: .25em .5em;
+  box-shadow: 0 2px 5px rgba(236, 72, 153, 0.5);
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 0 rgba(236, 72, 153, 0.7); }
+  70% { box-shadow: 0 0 0 10px rgba(236, 72, 153, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(236, 72, 153, 0); }
+}
+
+.hero-band {
+  position: relative;
+  z-index: 2;
+  padding: 4rem 0 2rem;
+  text-align: center;
+}
+.hero-band h1 { color: #fff; font-size: 3.5rem; text-shadow: 0 4px 20px rgba(0,0,0,0.2); margin-bottom: 1rem; }
+.hero-band p { color: rgba(255,255,255,0.95); font-size: 1.25rem; font-weight: 500; max-width: 640px; margin: 0 auto; text-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+
+/* Sky Animations */
+.sky-sun {
+  position: absolute; width: 80px; height: 80px; border-radius: 50%;
+  background: radial-gradient(circle at 30% 30%, #fff, #fde047 30%, #f59e0b 80%);
+  box-shadow: 0 0 60px 20px rgba(253, 224, 71, 0.6);
+  animation: float 6s ease-in-out infinite;
+}
+.sky-moon {
+  position: absolute; width: 60px; height: 60px; border-radius: 50%;
+  background: #f8fafc;
+  box-shadow: inset -15px -5px 0 0 #0f172a, 0 0 40px 10px rgba(248, 250, 252, 0.4);
+  animation: float 8s ease-in-out infinite;
+}
+.sky-star {
+  position: absolute; width: 4px; height: 4px; border-radius: 50%;
+  background: #fff; box-shadow: 0 0 10px 2px #fff;
+  animation: twinkle 3s ease-in-out infinite alternate;
+}
+.sky-cloud {
+  position: absolute; background: rgba(255,255,255,0.9);
+  border-radius: 50px; filter: blur(2px);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+  animation: drift linear infinite;
+}
+body.theme-night .sky-cloud { background: rgba(148, 163, 184, 0.15); filter: blur(4px); }
+.sky-raindrop {
+  position: absolute; top: -10%; width: 2px; height: 20px; border-radius: 2px;
+  background: linear-gradient(180deg, rgba(255,255,255,0), rgba(255,255,255,.8));
+  animation: fall linear infinite;
+}
+.sky-snowflake {
+  position: absolute; top: -5%; width: 6px; height: 6px; border-radius: 50%;
+  background: rgba(255,255,255,0.95); box-shadow: 0 0 5px #fff;
+  animation: snowfall linear infinite;
+}
+.sky-lightning {
+  position: absolute; inset: 0; background: #fff; opacity: 0;
+}
+.sky-lightning.flash { animation: flash 0.5s ease-out; }
+
+@keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+@keyframes twinkle { 0% { opacity: 0.1; transform: scale(0.8); } 100% { opacity: 1; transform: scale(1.2); } }
+@keyframes drift { from { transform: translateX(-150px); } to { transform: translateX(calc(100vw + 150px)); } }
+@keyframes fall { from { transform: translateY(-20px); opacity: 0; } 10% { opacity: 1; } to { transform: translateY(300px); opacity: 0; } }
+@keyframes snowfall { from { transform: translate(0, -20px); opacity: 0; } 10% { opacity: 1; } to { transform: translate(25px, 250px); opacity: 0; } }
+@keyframes flash { 0% { opacity: 0; } 10% { opacity: 0.9; } 20% { opacity: 0.2; } 30% { opacity: 0.7; } 100% { opacity: 0; } }
+
+/* ==========================================================================
+   Dashboard Widgets (Modernized)
+   ========================================================================== */
+
+.weather-glance { display: flex; align-items: center; gap: 1.5rem; }
+.weather-glance .temp { font-family: var(--font-display); font-size: 3.5rem; font-weight: 800; line-height: 1; background: linear-gradient(135deg, var(--ink), var(--ink-soft)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+body.theme-night .weather-glance .temp { background: linear-gradient(135deg, #fff, #94a3b8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+
+.chip {
+  display: inline-flex; align-items: center; gap: 0.5rem;
+  padding: 0.4rem 1rem; border-radius: 99px;
+  font-size: 0.85rem; font-weight: 600; letter-spacing: 0.02em;
+  background: var(--surface); border: 1px solid var(--line);
+  box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+  transition: transform 0.2s;
+}
+.chip:hover { transform: scale(1.05); }
+.chip-event { color: var(--cat-event); }
+.chip-birthday { color: var(--cat-birthday); }
+.chip-reminder { color: var(--cat-reminder); }
+
+.dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+.dot-event { background: var(--cat-event); }
+.dot-birthday { background: var(--cat-birthday); }
+.dot-reminder { background: var(--cat-reminder); }
+
+/* ==========================================================================
+   Calendar (Glass Grid)
+   ========================================================================== */
+
+.calendar-table { width: 100%; border-collapse: separate; border-spacing: 4px; table-layout: fixed; }
+.calendar-table th { font-family: var(--font-display); font-size: 0.9rem; color: var(--ink-soft); font-weight: 700; text-transform: uppercase; padding: 1rem 0; border: none; text-align: center; }
+.calendar-table td {
+  background: var(--surface); backdrop-filter: var(--glass-blur); border: 1px solid var(--line);
+  border-radius: var(--radius-sm); height: 120px; padding: 0.5rem;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.calendar-table td.empty { background: transparent; border: none; }
+.calendar-table td.today { background: rgba(245, 158, 11, 0.1); border-color: var(--accent); box-shadow: 0 4px 15px rgba(245, 158, 11, 0.1); }
+.calendar-table td:hover:not(.empty) { transform: scale(1.02); box-shadow: 0 10px 25px rgba(0,0,0,0.1); z-index: 10; position: relative; background: var(--surface-solid); }
+
+.day-number { font-family: var(--font-display); font-weight: 700; font-size: 1.1rem; color: var(--ink-soft); }
+.today .day-number { background: linear-gradient(135deg, var(--accent), #f97316); color: #fff; border-radius: 50%; width: 28px; height: 28px; display: inline-flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(245, 158, 11, 0.4); }
+
+.day-cell-link { display: block; text-decoration: none; color: inherit; height: 100%; }
+.mini-chip {
+  display: block; font-size: 0.7rem; font-weight: 600; padding: 0.2rem 0.5rem;
+  border-radius: 6px; margin-top: 0.3rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  background: rgba(0,0,0,0.05);
+}
+body.theme-night .mini-chip { background: rgba(255,255,255,0.1); }
+
+/* ==========================================================================
+   Diary & Notifications
+   ========================================================================== */
+
+.diary-page {
+  background: var(--surface); backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--line); border-left: 6px solid var(--accent);
+  border-radius: var(--radius-lg); padding: 2.5rem; box-shadow: var(--shadow-soft);
+}
+.diary-page .entry-title { font-size: 2rem; font-weight: 800; margin-bottom: 0.5rem; }
+
+.notification-item {
+  display: flex; gap: 1rem; align-items: center; padding: 1.25rem;
+  border: 1px solid var(--line); border-radius: var(--radius-md); margin-bottom: 0.8rem;
+  background: var(--surface); backdrop-filter: var(--glass-blur);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.notification-item:hover { transform: translateX(5px); box-shadow: 0 8px 20px rgba(0,0,0,0.1); }
+.notification-item.unread { border-left: 4px solid var(--accent); background: var(--surface-solid); }
+.notification-item .icon-wrap {
+  width: 45px; height: 45px; border-radius: 12px;
+  background: rgba(245, 158, 11, 0.15); color: var(--accent);
+  display: flex; align-items: center; justify-content: center; font-size: 1.25rem; flex-shrink: 0;
+}
+
+/* ==========================================================================
+   Weather Focus
+   ========================================================================== */
+.weather-hero { padding: 3rem 0; text-align: center; }
+.weather-hero .big-temp { font-size: 6rem; font-weight: 800; line-height: 1; letter-spacing: -0.05em; margin-bottom: 1rem; background: linear-gradient(135deg, var(--ink), var(--ink-soft)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+body.theme-night .weather-hero .big-temp { background: linear-gradient(135deg, #fff, #94a3b8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+
+.forecast-day { background: var(--surface); backdrop-filter: var(--glass-blur); border: 1px solid var(--line); border-radius: var(--radius-md); padding: 1.5rem 1rem; transition: transform 0.3s; }
+.forecast-day:hover { transform: translateY(-10px); box-shadow: 0 15px 30px rgba(0,0,0,0.1); background: var(--surface-solid); }
+
+.sky-footer { margin-top: 4rem; padding: 2rem 0; font-family: var(--font-display); font-weight: 500; opacity: 0.8; }

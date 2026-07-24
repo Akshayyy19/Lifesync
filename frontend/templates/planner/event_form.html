@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% block title %}{{ action }} event{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-7">
+    <div class="card p-4 mt-2">
+      <div class="card-body">
+        <h1 class="h3 mb-4">{{ action }} to your calendar</h1>
+
+        <form method="post">
+          {% csrf_token %}
+
+          <div class="mb-3">
+            <label class="form-label" for="{{ form.category.id_for_label }}">Type</label>
+            {{ form.category }}
+          </div>
+
+          {% if predicted_weather %}
+          <div class="alert d-flex align-items-center gap-3 py-2 px-3 mb-3 border-0" style="background: var(--surface-alt); border-radius: 10px;">
+            <i class="bi bi-{% if predicted_weather.condition == 'sunny' %}sun-fill{% elif predicted_weather.condition == 'clear-night' %}moon-stars-fill{% elif predicted_weather.condition == 'rainy' %}cloud-rain-fill{% elif predicted_weather.condition == 'snowy' %}snow{% elif predicted_weather.condition == 'thunderstorm' %}cloud-lightning-rain-fill{% elif predicted_weather.condition == 'misty' %}cloud-haze2-fill{% else %}cloud-fill{% endif %}" style="font-size:1.6rem; color:var(--accent-ink);"></i>
+            <div>
+              <div class="fw-medium small">Predicted Weather Forecast for {{ target_date }}</div>
+              <div class="text-muted-soft small"><strong>{{ predicted_weather.temp }}&deg;C</strong> &middot; {{ predicted_weather.description }}</div>
+            </div>
+          </div>
+          {% endif %}
+
+          <div class="mb-3">
+            <label class="form-label" for="{{ form.title.id_for_label }}">Title</label>
+            {{ form.title }}
+            {% for error in form.title.errors %}<div class="text-danger small mt-1">{{ error }}</div>{% endfor %}
+          </div>
+
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label class="form-label" for="{{ form.date.id_for_label }}">Date</label>
+              {{ form.date }}
+              {% for error in form.date.errors %}<div class="text-danger small mt-1">{{ error }}</div>{% endfor %}
+            </div>
+            <div class="col-md-6 mb-3" id="timeFieldWrap">
+              <label class="form-label" for="{{ form.time.id_for_label }}">Time</label>
+              {{ form.time }}
+              <div class="form-text">Leave blank for an all-day item.</div>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label" for="{{ form.location.id_for_label }}">Location</label>
+            {{ form.location }}
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label" for="{{ form.description.id_for_label }}">Notes</label>
+            {{ form.description }}
+          </div>
+
+          <div class="mb-4">
+            <label class="form-label" for="{{ form.remind_before_minutes.id_for_label }}">Remind me</label>
+            {{ form.remind_before_minutes }}
+          </div>
+
+          <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-sky-cta">Save</button>
+            {% if event %}
+            <a href="{% url 'planner:day_detail' event.date.year event.date.month event.date.day %}" class="btn btn-outline-primary">Cancel</a>
+            {% else %}
+            <a href="{% url 'planner:calendar' %}" class="btn btn-outline-primary">Cancel</a>
+            {% endif %}
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  var categoryField = document.getElementById('{{ form.category.id_for_label }}');
+  var timeWrap = document.getElementById('timeFieldWrap');
+  function syncTimeVisibility() {
+    timeWrap.style.display = categoryField.value === 'birthday' ? 'none' : '';
+  }
+  if (categoryField && timeWrap) {
+    categoryField.addEventListener('change', syncTimeVisibility);
+    syncTimeVisibility();
+  }
+});
+</script>
+{% endblock %}

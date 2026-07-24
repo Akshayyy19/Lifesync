@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Calendar{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+  <div class="d-flex align-items-center gap-2">
+    <a href="{% url 'planner:calendar_month' prev_year prev_month %}" class="btn btn-outline-primary btn-sm"><i class="bi bi-chevron-left"></i></a>
+    <h1 class="h4 mb-0" style="min-width:210px; text-align:center;">{{ month_name }} {{ year }}</h1>
+    <a href="{% url 'planner:calendar_month' next_year next_month %}" class="btn btn-outline-primary btn-sm"><i class="bi bi-chevron-right"></i></a>
+    {% if not is_current_month %}
+    <a href="{% url 'planner:calendar' %}" class="btn btn-link btn-sm">Today</a>
+    {% endif %}
+  </div>
+  <div class="d-flex align-items-center gap-2">
+    <div class="btn-group btn-group-sm" role="group" aria-label="Filter by category">
+      <button type="button" class="btn btn-outline-primary active" data-calendar-filter="all">All</button>
+      <button type="button" class="btn btn-outline-primary" data-calendar-filter="event">Events</button>
+      <button type="button" class="btn btn-outline-primary" data-calendar-filter="birthday">Birthdays</button>
+      <button type="button" class="btn btn-outline-primary" data-calendar-filter="reminder">Reminders</button>
+    </div>
+    <a href="{% url 'planner:event_create' %}" class="btn btn-sky-cta btn-sm"><i class="bi bi-plus-lg"></i> Add</a>
+  </div>
+</div>
+
+<div class="table-responsive">
+  <table class="calendar-table" data-active-filter="all">
+    <thead>
+      <tr>
+        {% for wd in weekday_headers %}<th>{{ wd }}</th>{% endfor %}
+      </tr>
+    </thead>
+    <tbody>
+      {% for week in weeks %}
+      <tr>
+        {% for day in week %}
+          {% if day %}
+          <td class="{% if day.is_today %}today{% endif %}">
+            <a class="day-cell-link" href="{% url 'planner:day_detail' day.date.year day.date.month day.date.day %}">
+              <span class="day-number">{{ day.day }}</span>
+              {% for item in day.items %}
+              <span class="mini-chip {{ item.badge_class }}" data-category="{{ item.category }}">{{ item.title }}</span>
+              {% endfor %}
+            </a>
+          </td>
+          {% else %}
+          <td class="empty"></td>
+          {% endif %}
+        {% endfor %}
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<div class="d-flex gap-3 mt-3 small text-muted-soft">
+  <span><span class="dot dot-event"></span> Event</span>
+  <span><span class="dot dot-birthday"></span> Birthday</span>
+  <span><span class="dot dot-reminder"></span> Reminder</span>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/calendar.js' %}"></script>
+{% endblock %}

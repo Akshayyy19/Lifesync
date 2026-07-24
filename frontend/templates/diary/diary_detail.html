@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}{{ entry.display_title }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-8">
+    <a href="{% url 'diary:list' %}" class="text-muted-soft small"><i class="bi bi-arrow-left"></i> Back to diary</a>
+
+    <div class="diary-page mt-3">
+      <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
+        <div>
+          <div class="entry-date">{{ entry.date|date:"l, d F Y" }}</div>
+          <h1 class="entry-title mt-1">{{ entry.display_title }}</h1>
+        </div>
+        {% if entry.mood %}<span class="mood-pill">{{ entry.get_mood_display }}</span>{% endif %}
+      </div>
+
+      {% if entry.weather_condition %}
+      <p class="text-muted-soft small"><i class="bi bi-cloud-sun"></i> {{ entry.weather_temp|floatformat:0 }}&deg;C and {{ entry.weather_condition|lower }} that day</p>
+      {% endif %}
+
+      <hr style="border-color:var(--line);">
+      <p class="entry-content">{{ entry.content }}</p>
+    </div>
+
+    <div class="d-flex gap-2 mt-3">
+      <a href="{% url 'diary:update' entry.pk %}" class="btn btn-outline-primary btn-sm">Edit</a>
+      <a href="{% url 'diary:delete' entry.pk %}" class="btn btn-outline-danger btn-sm">Delete</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

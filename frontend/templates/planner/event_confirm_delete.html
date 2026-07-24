@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Delete event{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-6">
+    <div class="card p-4 mt-4">
+      <div class="card-body">
+        <h1 class="h4 mb-3"><i class="bi bi-exclamation-triangle text-danger"></i> Delete this item?</h1>
+        <p>You're about to permanently delete <strong>"{{ event.title }}"</strong> on {{ event.date|date:"d M Y" }}. This can't be undone.</p>
+        <form method="post">
+          {% csrf_token %}
+          <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-danger">Yes, delete it</button>
+            <a href="{% url 'planner:day_detail' event.date.year event.date.month event.date.day %}" class="btn btn-outline-primary">Cancel</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

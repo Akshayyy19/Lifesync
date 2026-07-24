@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Notifications{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h1 class="h3 mb-0">Notifications</h1>
+  {% if notifications %}
+  <form method="post" action="{% url 'notifications:mark_all_read' %}">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-outline-primary btn-sm">Mark all as read</button>
+  </form>
+  {% endif %}
+</div>
+
+{% if notifications %}
+{% for n in notifications %}
+<div class="notification-item {% if not n.is_read %}unread{% endif %}">
+  <div class="icon-wrap"><i class="bi {{ n.icon_class }}"></i></div>
+  <div class="flex-grow-1">
+    <div>{{ n.message }}</div>
+    <div class="text-muted-soft small font-mono">{{ n.created_at|date:"d M Y, g:i A" }}</div>
+  </div>
+  {% if not n.is_read %}
+  <a href="{% url 'notifications:mark_read' n.pk %}" data-mark-read-link class="btn btn-sm btn-outline-primary flex-shrink-0">Mark read</a>
+  {% endif %}
+</div>
+{% endfor %}
+{% else %}
+<div class="empty-state">
+  <i class="bi bi-bell-slash"></i>
+  <p>No notifications yet. We'll let you know about upcoming events, birthdays and reminders here.</p>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/notifications.js' %}"></script>
+{% endblock %}

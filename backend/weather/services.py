@@ -69,6 +69,14 @@ def _icon_to_condition(icon_code):
     return mapping.get(code, 'cloudy')
 
 
+def _format_time_12h(dt):
+    """Format a datetime as '6:15 AM' without strftime's platform-specific '%-I'
+    (that directive raises ValueError on Windows, which is what this project is developed on)."""
+    hour12 = dt.hour % 12 or 12
+    ampm = 'AM' if dt.hour < 12 else 'PM'
+    return f'{hour12}:{dt.minute:02d} {ampm}'
+
+
 def get_current_weather(city):
     if not city or not city.strip():
         return None
@@ -269,7 +277,7 @@ def get_day_weather_timeline(city, target_date):
             'precip_cm': round((precips[i] or 0) / 10.0, 2),
             'precip_mm': round(precips[i], 1) if (i < len(precips) and precips[i] is not None) else 0,
             'pressure': round(pressures[i]) if (i < len(pressures) and pressures[i] is not None) else 1013,
-            'humidity': humidities[i] if i < len(humidities) else 50,
+            'humidity': round(humidities[i]) if (i < len(humidities) and humidities[i] is not None) else 50,
             'wind_speed': round(winds[i]) if (i < len(winds) and winds[i] is not None) else 0,
             'wind_gust': round(gusts[i]) if (i < len(gusts) and gusts[i] is not None) else 0,
             'wind_dir': dirs[i] if (i < len(dirs) and dirs[i] is not None) else 0,
@@ -468,7 +476,8 @@ def get_8_day_cards(city, center_date=None):
                 'end_date': end_str,
                 'daily': (
                     'weather_code,temperature_2m_max,temperature_2m_min,'
-                    'precipitation_sum,precipitation_probability_max,wind_speed_10m_max,wind_gusts_10m_max'
+                    'precipitation_sum,precipitation_probability_max,wind_speed_10m_max,wind_gusts_10m_max,'
+                    'uv_index_max,relative_humidity_2m_mean'
                 ),
                 'wind_speed_unit': 'kmh',
                 'timezone': 'auto',
@@ -489,6 +498,8 @@ def get_8_day_cards(city, center_date=None):
     precip_probs = daily.get('precipitation_probability_max', [])
     wind_speeds = daily.get('wind_speed_10m_max', [])
     wind_gusts = daily.get('wind_gusts_10m_max', [])
+    uv_maxes = daily.get('uv_index_max', [])
+    humidity_means = daily.get('relative_humidity_2m_mean', [])
 
     cards = []
     for i in range(len(dates)):
@@ -529,10 +540,8 @@ def get_8_day_cards(city, center_date=None):
             'precip_prob': precip_probs[i] if (i < len(precip_probs) and precip_probs[i] is not None) else 0,
             'wind_speed': round(wind_speeds[i]) if (i < len(wind_speeds) and wind_speeds[i] is not None) else 12,
             'wind_gust': round(wind_gusts[i]) if (i < len(wind_gusts) and wind_gusts[i] is not None) else 30,
-            'humidity': 70,
-            'pressure': 1008,
-            'uv': 6,
-            'visibility': 10.0,
+            'humidity': round(humidity_means[i]) if (i < len(humidity_means) and humidity_means[i] is not None) else None,
+            'uv': round(uv_maxes[i], 1) if (i < len(uv_maxes) and uv_maxes[i] is not None) else None,
             'description': desc,
             'condition': condition,
             'icon': base_icon + 'd',
@@ -573,6 +582,11 @@ def _get_current_weather_owm(city, api_key):
 
     weather_block = (data.get('weather') or [{}])[0]
     icon = weather_block.get('icon', '01d')
+    tz_offset = data.get('timezone', 0)  # seconds offset from UTC, provided by OWM
+    sunrise_ts = data.get('sys', {}).get('sunrise')
+    sunset_ts = data.get('sys', {}).get('sunset')
+    sunrise = _format_time_12h(datetime.utcfromtimestamp(sunrise_ts + tz_offset)) if sunrise_ts else None
+    sunset = _format_time_12h(datetime.utcfromtimestamp(sunset_ts + tz_offset)) if sunset_ts else None
 
     return {
         'city': data.get('name') or city,
@@ -583,14 +597,14 @@ def _get_current_weather_owm(city, api_key):
         'temp_max': round(data.get('main', {}).get('temp_max', 0)),
         'humidity': data.get('main', {}).get('humidity'),
         'pressure': data.get('main', {}).get('pressure'),
-        'wind_speed': round(data.get('wind', {}).get('speed', 0), 1),
+        'wind_speed': round(data.get('wind', {}).get('speed', 0) * 3.6, 1),  # OWM metric units = m/s; convert to km/h
         'description': weather_block.get('description', '').title(),
         'main': weather_block.get('main', ''),
         'icon': icon,
         'condition': _icon_to_condition(icon),
         'is_day': icon.endswith('d'),
-        'sunrise': data.get('sys', {}).get('sunrise'),
-        'sunset': data.get('sys', {}).get('sunset'),
+        'sunrise': sunrise,
+        'sunset': sunset,
     }
 
 
@@ -659,8 +673,8 @@ def _get_current_weather_openmeteo(city):
                 'latitude': geo['lat'],
                 'longitude': geo['lon'],
                 'current': 'temperature_2m,relative_humidity_2m,apparent_temperature,surface_pressure,wind_speed_10m,weather_code,is_day',
-                'daily': 'weather_code,temperature_2m_max,temperature_2m_min',
-                'wind_speed_unit': 'ms',
+                'daily': 'weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset',
+                'wind_speed_unit': 'kmh',
                 'timezone': 'auto',
             },
             timeout=REQUEST_TIMEOUT,
@@ -688,6 +702,21 @@ def _get_current_weather_openmeteo(city):
     temp_max = temp_max_list[0] if temp_max_list else current.get('temperature_2m', 0)
     temp_min = temp_min_list[0] if temp_min_list else current.get('temperature_2m', 0)
 
+    sunrise_list = daily.get('sunrise') or []
+    sunset_list = daily.get('sunset') or []
+    sunrise = None
+    sunset = None
+    if sunrise_list:
+        try:
+            sunrise = _format_time_12h(datetime.fromisoformat(sunrise_list[0]))
+        except ValueError:
+            sunrise = None
+    if sunset_list:
+        try:
+            sunset = _format_time_12h(datetime.fromisoformat(sunset_list[0]))
+        except ValueError:
+            sunset = None
+
     return {
         'city': geo['name'],
         'country': geo['country'],
@@ -703,8 +732,8 @@ def _get_current_weather_openmeteo(city):
         'icon': icon,
         'condition': condition,
         'is_day': is_day_flag,
-        'sunrise': '6:15 AM',
-        'sunset': '6:47 PM',
+        'sunrise': sunrise,
+        'sunset': sunset,
     }
 
 

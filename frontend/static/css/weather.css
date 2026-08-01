@@ -1,0 +1,290 @@
+/* ==========================================================================
+   LifeSync — Weather page
+   Builds on the site's existing tokens (--surface, --ink, --accent, etc.)
+   instead of a separate hardcoded palette, so this page stays in sync with
+   the day/night theme everywhere else in the app.
+   ========================================================================== */
+
+:root {
+  --chart-1: var(--cat-event);   /* sky blue — matches the day/night motif */
+  --chart-2: var(--accent);      /* sun gold — matches the day/night motif */
+}
+
+.weather-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+.weather-toolbar form { flex: 1 1 260px; max-width: 360px; }
+.city-pills { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.city-pill {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.unit-toggle {
+  display: inline-flex;
+  border: 1px solid var(--line);
+  border-radius: 99px;
+  padding: 0.2rem;
+  background: var(--surface);
+  backdrop-filter: var(--glass-blur);
+}
+.unit-toggle button {
+  border: none;
+  background: transparent;
+  color: var(--ink-soft);
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.85rem;
+  padding: 0.35rem 0.85rem;
+  border-radius: 99px;
+  transition: all 0.2s ease;
+}
+.unit-toggle button.active {
+  background: linear-gradient(135deg, var(--accent), #f97316);
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.4);
+}
+
+/* ---- Hero -------------------------------------------------------------- */
+
+.weather-hero { padding: 1.5rem 0 2.5rem; text-align: left; }
+.weather-hero-card { position: relative; overflow: hidden; }
+.weather-hero-content { position: relative; z-index: 1; }
+.weather-hero-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+}
+.weather-hero .location-name {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: var(--ink-soft);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.sky-scene-inline {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-radius: var(--radius-lg);
+  pointer-events: none;
+  opacity: 0.55;
+}
+.weather-hero .temp-row { display: flex; align-items: center; gap: 1.25rem; margin-top: 0.25rem; }
+.weather-hero .big-temp { font-size: 5rem; margin-bottom: 0; }
+.weather-hero .condition-icon-lg { font-size: 4.5rem; color: var(--accent); line-height: 1; flex-shrink: 0; }
+.weather-hero .condition-desc { font-family: var(--font-display); font-weight: 700; font-size: 1.35rem; margin-bottom: 0.15rem; }
+.weather-hero .hi-lo { color: var(--ink-soft); font-weight: 600; }
+
+.hero-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 0.75rem;
+  margin-top: 1.75rem;
+}
+.hero-stat {
+  background: var(--surface);
+  backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 0.85rem 1rem;
+}
+.hero-stat .label { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-soft); font-weight: 700; }
+.hero-stat .value { font-family: var(--font-display); font-weight: 700; font-size: 1.3rem; margin-top: 0.15rem; }
+.hero-stat .value small { font-size: 0.85rem; font-weight: 600; color: var(--ink-soft); }
+
+.hero-note {
+  margin-top: 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-weight: 600;
+  color: var(--ink-soft);
+}
+.hero-note .bi { color: var(--accent); }
+
+/* ---- Date strip ---------------------------------------------------------*/
+
+.date-strip-wrap { position: relative; margin-bottom: 1.75rem; }
+.date-strip {
+  display: flex;
+  gap: 0.85rem;
+  overflow-x: auto;
+  scroll-behavior: smooth;
+  padding: 0.35rem 0.1rem 1rem;
+  scrollbar-width: thin;
+}
+.date-strip::-webkit-scrollbar { height: 6px; }
+.date-strip::-webkit-scrollbar-thumb { background: var(--line); border-radius: 99px; }
+
+.date-card {
+  flex: 0 0 auto;
+  min-width: 108px;
+  text-align: center;
+  cursor: pointer;
+  text-decoration: none;
+  color: inherit;
+}
+.date-card .forecast-day { padding: 1rem 0.6rem; }
+.date-card .d-label { font-family: var(--font-display); font-weight: 700; font-size: 0.85rem; color: var(--ink-soft); }
+.date-card.is-selected .d-label { color: var(--accent); }
+.date-card.is-selected .forecast-day {
+  border-color: var(--accent);
+  background: var(--surface-solid);
+  box-shadow: 0 8px 20px rgba(245, 158, 11, 0.18);
+}
+.date-card .d-icon { font-size: 1.6rem; color: var(--accent); margin: 0.4rem auto; display: block; }
+.date-card .d-temps { font-weight: 700; font-family: var(--font-display); }
+.date-card .d-temps .lo { color: var(--ink-soft); font-weight: 500; }
+.date-card .d-rain { font-size: 0.75rem; color: var(--chart-1); font-weight: 600; margin-top: 0.25rem; display: flex; align-items: center; justify-content: center; gap: 0.2rem; }
+
+/* ---- Tabs ---------------------------------------------------------------*/
+
+.weather-tabs {
+  display: flex;
+  gap: 0.25rem;
+  overflow-x: auto;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 1.25rem;
+}
+.weather-tabs a {
+  flex: 0 0 auto;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 0.92rem;
+  color: var(--ink-soft);
+  padding: 0.7rem 0.9rem;
+  border-bottom: 2px solid transparent;
+  white-space: nowrap;
+}
+.weather-tabs a:hover { color: var(--ink); }
+.weather-tabs a.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+/* ---- Chart card ----------------------------------------------------------*/
+
+.chart-card { padding: 1.5rem; }
+.chart-mode-banner {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 0.3rem 0.85rem;
+  border-radius: 99px;
+  margin-bottom: 1rem;
+}
+.chart-mode-banner.past { background: rgba(100, 116, 139, 0.15); color: var(--ink-soft); }
+.chart-mode-banner.today { background: rgba(245, 158, 11, 0.15); color: var(--accent); }
+.chart-mode-banner.future { background: rgba(59, 130, 246, 0.15); color: var(--chart-1); }
+
+.chart-legend { display: flex; flex-wrap: wrap; gap: 1rem; margin-bottom: 0.75rem; font-size: 0.85rem; font-weight: 600; color: var(--ink-soft); }
+.chart-legend .legend-item { display: flex; align-items: center; gap: 0.4rem; }
+.legend-swatch { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+
+.svg-chart-wrapper { position: relative; }
+.svg-chart-wrapper svg { width: 100%; height: auto; display: block; touch-action: pan-y; cursor: crosshair; }
+
+.chart-axis-label { font-family: var(--font-body); font-size: 11px; fill: var(--ink-soft); }
+.chart-grid-line { stroke: var(--line); stroke-width: 1; }
+.chart-hour-icon { font-size: 15px; }
+
+.chart-crosshair-line { stroke: var(--ink-soft); stroke-width: 1; stroke-dasharray: 3 3; opacity: 0; pointer-events: none; }
+.chart-hover-dot { opacity: 0; pointer-events: none; }
+
+.chart-tooltip {
+  position: absolute;
+  top: 8px;
+  min-width: 128px;
+  background: var(--surface-solid);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-soft);
+  padding: 0.6rem 0.8rem;
+  font-size: 0.8rem;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  z-index: 5;
+}
+.chart-tooltip.visible { opacity: 1; }
+.chart-tooltip .tt-time { font-family: var(--font-display); font-weight: 700; margin-bottom: 0.3rem; color: var(--ink); }
+.chart-tooltip .tt-row { display: flex; align-items: center; gap: 0.4rem; color: var(--ink-soft); font-weight: 600; }
+.chart-tooltip .tt-row + .tt-row { margin-top: 0.15rem; }
+.chart-tooltip .tt-row strong { color: var(--ink); font-weight: 700; }
+
+.chart-empty-state { text-align: center; padding: 3rem 1rem; color: var(--ink-soft); }
+.chart-empty-state .bi { font-size: 2rem; color: var(--line); margin-bottom: 0.75rem; display: block; }
+
+/* ---- Pollutant chips (Air Quality tab) ----------------------------------*/
+
+.pollutant-chips { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1.25rem; }
+.pollutant-chip {
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink-soft);
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.8rem;
+  padding: 0.35rem 0.9rem;
+  border-radius: 99px;
+  transition: all 0.2s ease;
+}
+.pollutant-chip.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+/* ---- Full-screen expand modal --------------------------------------------*/
+
+.chart-expand-btn {
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink-soft);
+  border-radius: var(--radius-sm);
+  width: 36px; height: 36px;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.chart-expand-btn:hover { color: var(--accent); border-color: var(--accent); }
+
+.chart-modal-backdrop {
+  position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(4px);
+  display: none; align-items: center; justify-content: center;
+  z-index: 1050; padding: 2rem;
+}
+.chart-modal-backdrop.open { display: flex; }
+.chart-modal {
+  background: var(--surface-solid);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow-soft);
+  padding: 1.75rem;
+  max-width: 1100px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+.chart-modal-close {
+  border: none; background: transparent; color: var(--ink-soft);
+  font-size: 1.4rem; float: right; line-height: 1;
+}
+
+/* ---- Responsive ----------------------------------------------------------*/
+
+@media (max-width: 767px) {
+  .weather-hero .big-temp { font-size: 3.75rem; }
+  .weather-hero .condition-icon-lg { width: 64px; height: 64px; }
+  .date-card { min-width: 88px; }
+  .chart-card { padding: 1rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .forecast-day, .card { transition: none !important; }
+}

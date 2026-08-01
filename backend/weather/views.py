@@ -33,6 +33,8 @@ def weather_index(request):
         'day_timeline': day_timeline,
         'air_quality': air_quality,
         'cards_strip': cards_strip,
+        'timeline_data': day_timeline['timeline'] if day_timeline else [],
+        'aqi_data': air_quality['timeline'] if air_quality else [],
         'city_query': city,
         'date_query': date_str,
         'active_tab': active_tab,

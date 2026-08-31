@@ -107,6 +107,9 @@ def get_forecast(city, days=5):
     return _get_forecast_openmeteo(city, days=days)
 
 
+COUNTRY_FEATURE_CODES = {'PCLI', 'PCLD', 'PCL', 'PCLS', 'TERR', 'CONT'}
+
+
 def _geocode_openmeteo(city):
     """Fast geocoding: check memory cache -> Open-Meteo -> Nominatim (only if needed)."""
     if not city:
@@ -122,19 +125,52 @@ def _geocode_openmeteo(city):
     try:
         response = requests.get(
             GEO_URL_OPENMETEO,
-            params={'name': clean_name, 'count': 1, 'language': 'en', 'format': 'json'},
+            params={'name': clean_name, 'count': 5, 'language': 'en', 'format': 'json'},
             timeout=3,
         )
         if response.status_code == 200:
             data = response.json()
-            results = data.get('results')
+            results = data.get('results') or []
             if results:
                 loc = results[0]
+                feature_code = loc.get('feature_code', '')
+
+                # If top result is a country entity (e.g., India, Japan, France)
+                if feature_code in COUNTRY_FEATURE_CODES:
+
+                    if loc.get('name', '').lower() == clean_name.lower() or loc.get('country', '').lower() == clean_name.lower():
+                        res = {
+                            'name': loc.get('name', clean_name),
+                            'country': loc.get('country', loc.get('country_code', '')),
+                            'lat': loc.get('latitude'),
+                            'lon': loc.get('longitude'),
+                            'is_country': True,
+                        }
+                        GEO_CACHE[cache_key] = res
+                        return res
+
+                    # Otherwise try to find a matching city/populated place
+                    city_match = next((r for r in results if r.get('feature_code', '') not in COUNTRY_FEATURE_CODES), None)
+                    if city_match:
+                        loc = city_match
+                    else:
+                        res = {
+                            'name': loc.get('name', clean_name),
+                            'country': loc.get('country', loc.get('country_code', '')),
+                            'lat': loc.get('latitude'),
+                            'lon': loc.get('longitude'),
+                            'is_country': True,
+                        }
+                        GEO_CACHE[cache_key] = res
+                        return res
+
+
                 res = {
                     'name': loc.get('name', clean_name),
                     'country': loc.get('country', loc.get('country_code', '')),
                     'lat': loc.get('latitude'),
                     'lon': loc.get('longitude'),
+                    'is_country': False,
                 }
                 GEO_CACHE[cache_key] = res
                 return res
@@ -160,6 +196,7 @@ def _geocode_openmeteo(city):
                     'country': country_name,
                     'lat': float(loc.get('lat')),
                     'lon': float(loc.get('lon')),
+                    'is_country': False,
                 }
                 GEO_CACHE[cache_key] = res
                 return res
@@ -167,6 +204,50 @@ def _geocode_openmeteo(city):
         pass
 
     return None
+
+
+def search_city_suggestions(query):
+    """Search for city recommendations based on query string using Open-Meteo Geocoding."""
+    if not query or len(query.strip()) < 2:
+        return []
+
+    clean_query = query.strip()
+    try:
+        response = requests.get(
+            GEO_URL_OPENMETEO,
+            params={'name': clean_query, 'count': 10, 'language': 'en', 'format': 'json'},
+            timeout=3,
+        )
+        if response.status_code == 200:
+            results = response.json().get('results') or []
+            suggestions = []
+            seen = set()
+            for item in results:
+                feature_code = item.get('feature_code', '')
+                if feature_code in COUNTRY_FEATURE_CODES:
+                    continue  # Exclude country entities from city recommendations
+
+                name = item.get('name', '')
+                admin1 = item.get('admin1', '')
+                country = item.get('country', '')
+
+                parts = [p for p in [name, admin1, country] if p]
+                display_name = ", ".join(parts)
+
+                if display_name.lower() not in seen:
+                    seen.add(display_name.lower())
+                    suggestions.append({
+                        'name': name,
+                        'display': display_name,
+                        'country': country,
+                        'admin1': admin1,
+                    })
+            return suggestions
+    except Exception:
+        pass
+
+    return []
+
 
 
 def get_day_weather_timeline(city, target_date):
@@ -732,6 +813,7 @@ def _get_current_weather_openmeteo(city):
         'icon': icon,
         'condition': condition,
         'is_day': is_day_flag,
+        'is_country': geo.get('is_country', False),
         'sunrise': sunrise,
         'sunset': sunset,
     }

@@ -1,0 +1,19 @@
+{% if day %}
+<td class="{% if day.is_today %}today{% endif %} {% if day.other_month %}other-month{% endif %} position-relative">
+  <a class="day-cell-link d-block" href="{% url 'planner:day_detail' day.date.year day.date.month day.date.day %}">
+    <div class="d-flex justify-content-between align-items-start mb-1">
+        <span class="day-number">{{ day.day }}</span>
+        {% if day.weather_icon %}
+        <div title="{{ day.weather_temp }}°C">
+            <img src="https://openweathermap.org/img/wn/{{ day.weather_icon }}.png" alt="weather" style="width:28px;height:28px;margin-top:-4px;margin-right:-4px;opacity:0.85;">
+        </div>
+        {% endif %}
+    </div>
+    {% for item in day.items %}
+    <span class="mini-chip {{ item.badge_class }}" data-category="{{ item.category }}">{{ item.title }}</span>
+    {% endfor %}
+  </a>
+</td>
+{% else %}
+<td class="empty-fill"></td>
+{% endif %}

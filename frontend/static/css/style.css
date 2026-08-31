@@ -340,6 +340,14 @@ body.theme-night .weather-glance .temp { background: linear-gradient(135deg, #ff
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 .calendar-table td.empty { background: transparent; border: none; }
+.calendar-table td.empty-fill {
+  background: var(--surface); backdrop-filter: var(--glass-blur); border: 1px solid var(--line);
+  border-radius: var(--radius-sm); height: 120px; padding: 0.5rem;
+  opacity: 0.35;
+}
+.calendar-table td.other-month {
+  opacity: 0.5;
+}
 .calendar-table td.today { background: rgba(245, 158, 11, 0.1); border-color: var(--accent); box-shadow: 0 4px 15px rgba(245, 158, 11, 0.1); }
 .calendar-table td:hover:not(.empty) { transform: scale(1.02); box-shadow: 0 10px 25px rgba(0,0,0,0.1); z-index: 10; position: relative; background: var(--surface-solid); }
 

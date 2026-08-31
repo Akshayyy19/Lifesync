@@ -2,64 +2,431 @@
 {% load static %}
 {% block title %}Calendar{% endblock %}
 
+{% block extra_head %}
+<style>
+/* ── Today button ── */
+.btn-today {
+    background: linear-gradient(135deg, rgba(255,255,255,0.15), rgba(255,255,255,0.05));
+    border: 1px solid var(--line);
+    color: var(--ink);
+    font-weight: 700;
+    border-radius: var(--radius-sm);
+    backdrop-filter: var(--glass-blur);
+    transition: all 0.25s ease;
+    padding: 0.35rem 1rem;
+    font-size: 0.85rem;
+}
+.btn-today:hover {
+    background: rgba(245,158,11,0.15);
+    border-color: var(--accent);
+    color: var(--accent);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(245,158,11,0.2);
+}
+
+/* ── Weather badge in header ── */
+.cal-weather-badge {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid var(--line);
+    border-radius: 99px;
+    padding: 0.2rem 0.75rem 0.2rem 0.2rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    backdrop-filter: var(--glass-blur);
+    cursor: pointer;
+    transition: all 0.25s ease;
+    user-select: none;
+}
+.cal-weather-badge:hover {
+    border-color: var(--accent);
+    background: rgba(245,158,11,0.1);
+}
+.cal-weather-badge img { width: 30px; height: 30px; }
+.cal-weather-badge .badge-temp { color: var(--ink); }
+.cal-weather-badge .badge-eye {
+    margin-left: 0.3rem;
+    font-size: 0.7rem;
+    opacity: 0.6;
+    transition: opacity 0.2s;
+}
+
+/* ── Weather icon inside day cells ── */
+.day-wx {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    font-size: 0.65rem;
+    font-weight: 700;
+    color: var(--ink-soft);
+    line-height: 1;
+}
+.day-wx img { width: 26px; height: 26px; }
+.day-wx .wx-temp { font-size: 0.65rem; }
+
+/* When weather is hidden */
+.weather-hidden .day-wx,
+.weather-hidden .cal-weather-badge .badge-temp,
+.weather-hidden .cal-weather-badge img {
+    display: none;
+}
+.weather-hidden .cal-weather-badge {
+    opacity: 0.5;
+}
+.weather-hidden .cal-weather-badge .badge-eye::before {
+    content: '🙈';
+}
+.cal-weather-badge .badge-eye::before {
+    content: '👁';
+}
+
+/* ── Daily Timeline Styles ── */
+.time-grid {
+    display: grid;
+    grid-template-columns: 80px 1fr;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    position: relative;
+    background: var(--surface);
+    backdrop-filter: var(--glass-blur);
+    overflow: hidden;
+}
+.time-label {
+    border-right: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+    padding: 1rem;
+    text-align: right;
+    font-size: 0.85rem;
+    color: var(--ink-soft);
+    font-weight: 600;
+}
+.time-cell {
+    border-bottom: 1px solid var(--line);
+    padding: 0.5rem;
+    position: relative;
+    min-height: 80px;
+}
+.time-grid > div:nth-last-child(-n+2) { border-bottom: none; }
+
+.now-indicator {
+    position: absolute;
+    left: 0; right: 0;
+    border-top: 2px solid #ef4444;
+    z-index: 10;
+    pointer-events: none;
+}
+.now-indicator::before {
+    content: '';
+    position: absolute;
+    left: 75px; top: -5px;
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    background-color: #ef4444;
+}
+
+/* ── Yearly Grid Styles ── */
+.year-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1.5rem;
+}
+.mini-month {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 2px;
+}
+.mini-month th {
+    text-align: center;
+    padding: 0.25rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--ink-soft);
+}
+.mini-month td {
+    text-align: center;
+    padding: 0.4rem;
+    font-size: 0.85rem;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    background: rgba(255,255,255,0.05);
+    transition: all 0.2s ease;
+}
+.mini-month td:hover:not(:empty) {
+    background: var(--surface-solid);
+    transform: scale(1.1);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    border-color: var(--accent);
+    z-index: 2;
+    position: relative;
+}
+.mini-month td.today-cell {
+    background: linear-gradient(135deg, var(--accent), #f97316);
+    border-color: var(--accent);
+}
+.mini-month td.today-cell a { color: #fff !important; font-weight: bold; }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
-  <div class="d-flex align-items-center gap-2">
-    <a href="{% url 'planner:calendar_month' prev_year prev_month %}" class="btn btn-outline-primary btn-sm"><i class="bi bi-chevron-left"></i></a>
-    <h1 class="h4 mb-0" style="min-width:210px; text-align:center;">{{ month_name }} {{ year }}</h1>
-    <a href="{% url 'planner:calendar_month' next_year next_month %}" class="btn btn-outline-primary btn-sm"><i class="bi bi-chevron-right"></i></a>
-    {% if not is_current_month %}
-    <a href="{% url 'planner:calendar' %}" class="btn btn-link btn-sm">Today</a>
-    {% endif %}
+
+{# ══════════════════════════════════════════════════════════ TOOLBAR #}
+<div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+
+  {# — Navigation — #}
+  <div class="d-flex align-items-center gap-1">
+    <a href="{% url 'planner:calendar_month' prev_year prev_month %}?view={{ view_mode }}" class="btn btn-outline-primary btn-sm"><i class="bi bi-chevron-left"></i></a>
+    <h1 class="h5 mb-0 px-2 fw-bold" style="min-width:180px; text-align:center;">
+      {% if view_mode == 'day' %}{{ current_day|date:"F j, Y" }}
+      {% elif view_mode == 'year' %}{{ year }}
+      {% else %}{{ month_name }} {{ year }}{% endif %}
+    </h1>
+    <a href="{% url 'planner:calendar_month' next_year next_month %}?view={{ view_mode }}" class="btn btn-outline-primary btn-sm"><i class="bi bi-chevron-right"></i></a>
+    <a href="{% url 'planner:calendar' %}?view={{ view_mode }}" class="btn-today text-decoration-none ms-1">Today</a>
   </div>
-  <div class="d-flex align-items-center gap-2">
-    <div class="btn-group btn-group-sm" role="group" aria-label="Filter by category">
-      <button type="button" class="btn btn-outline-primary active" data-calendar-filter="all">All</button>
-      <button type="button" class="btn btn-outline-primary" data-calendar-filter="event">Events</button>
-      <button type="button" class="btn btn-outline-primary" data-calendar-filter="birthday">Birthdays</button>
-      <button type="button" class="btn btn-outline-primary" data-calendar-filter="reminder">Reminders</button>
-    </div>
-    <a href="{% url 'planner:event_create' %}" class="btn btn-sky-cta btn-sm"><i class="bi bi-plus-lg"></i> Add</a>
+
+  {# — View switcher — #}
+  <div class="btn-group btn-group-sm ms-auto">
+    <a href="?view=day"   class="btn {% if view_mode == 'day'   %}btn-primary{% else %}btn-outline-primary{% endif %}">Day</a>
+    <a href="?view=week"  class="btn {% if view_mode == 'week'  %}btn-primary{% else %}btn-outline-primary{% endif %}">Week</a>
+    <a href="?view=month" class="btn {% if view_mode == 'month' %}btn-primary{% else %}btn-outline-primary{% endif %}">Month</a>
+    <a href="?view=year"  class="btn {% if view_mode == 'year'  %}btn-primary{% else %}btn-outline-primary{% endif %}">Year</a>
   </div>
+
+  {# — Category filters — #}
+  <div class="btn-group btn-group-sm">
+    <button type="button" class="btn btn-outline-primary active" data-calendar-filter="all">All</button>
+    <button type="button" class="btn btn-outline-primary" data-calendar-filter="event">Events</button>
+    <button type="button" class="btn btn-outline-primary" data-calendar-filter="birthday">Birthdays</button>
+    <button type="button" class="btn btn-outline-primary" data-calendar-filter="reminder">Reminders</button>
+  </div>
+
+  {# — Weather badge + toggle — #}
+  {% if today_weather %}
+  <div class="cal-weather-badge" id="weatherToggleBtn" title="Click to show/hide weather on calendar">
+    <img src="https://openweathermap.org/img/wn/{{ today_weather.icon }}.png" alt="{{ today_weather.description }}">
+    <span class="badge-temp">{{ today_weather.temp|floatformat:0 }}°C</span>
+    <span class="badge-eye ms-1"></span>
+  </div>
+  {% else %}
+  <button class="btn btn-outline-secondary btn-sm" id="weatherToggleBtn" title="Toggle weather icons">
+    <i class="bi bi-cloud-sun"></i>
+  </button>
+  {% endif %}
+
+  {# — Add event — #}
+  <a href="{% url 'planner:event_create' %}?date={{ year }}-{{ month }}-{{ day }}" class="btn btn-sky-cta btn-sm">
+    <i class="bi bi-plus-lg"></i> Add
+  </a>
 </div>
 
-<div class="table-responsive">
+{# ══════════════════════════════════════════════════════════ CALENDAR BODY #}
+<div id="calendarBody">
+
+{% if view_mode == 'month' or view_mode == 'week' %}
+<div class="table-responsive glass-card p-2">
   <table class="calendar-table" data-active-filter="all">
     <thead>
-      <tr>
-        {% for wd in weekday_headers %}<th>{{ wd }}</th>{% endfor %}
-      </tr>
+      <tr>{% for wd in weekday_headers %}<th>{{ wd }}</th>{% endfor %}</tr>
     </thead>
     <tbody>
+      {% if view_mode == 'week' %}
+      <tr>
+        {% for day in current_week %}{% include "planner/partials/day_cell.html" %}{% endfor %}
+      </tr>
+      {% else %}
       {% for week in weeks %}
       <tr>
-        {% for day in week %}
-          {% if day %}
-          <td class="{% if day.is_today %}today{% endif %}">
-            <a class="day-cell-link" href="{% url 'planner:day_detail' day.date.year day.date.month day.date.day %}">
-              <span class="day-number">{{ day.day }}</span>
-              {% for item in day.items %}
-              <span class="mini-chip {{ item.badge_class }}" data-category="{{ item.category }}">{{ item.title }}</span>
-              {% endfor %}
-            </a>
-          </td>
-          {% else %}
-          <td class="empty"></td>
-          {% endif %}
-        {% endfor %}
+        {% for day in week %}{% include "planner/partials/day_cell.html" %}{% endfor %}
       </tr>
       {% endfor %}
+      {% endif %}
     </tbody>
   </table>
 </div>
+{% endif %}
 
+{# ── Day view ── #}
+{% if view_mode == 'day' %}
+<div class="glass-card p-3">
+  {% if today_weather %}
+  <div class="d-flex align-items-center gap-2 mb-3 p-2 rounded" style="background:rgba(255,255,255,0.06); border:1px solid var(--line);">
+    <div class="day-wx">
+      <img src="https://openweathermap.org/img/wn/{{ today_weather.icon }}@2x.png" alt="{{ today_weather.description }}" style="width:40px;height:40px;">
+    </div>
+    <div>
+      <div class="fw-bold" style="font-size:1.3rem;">{{ today_weather.temp|floatformat:0 }}°C</div>
+      <div class="small text-muted text-capitalize">{{ today_weather.description }} · {{ city }}</div>
+    </div>
+  </div>
+  {% endif %}
+
+  {% if all_day_events %}
+  <div class="mb-3 p-2" style="border-bottom:1px solid var(--line);">
+    <strong class="text-muted small">All Day</strong>
+    <div class="d-flex flex-wrap gap-2 mt-1">
+      {% for item in all_day_events %}
+      <a href="{% url 'planner:event_update' item.pk %}" class="mini-chip {{ item.badge_class }} text-decoration-none" data-category="{{ item.category }}">{{ item.title }}</a>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <div class="time-grid" id="timeGrid" data-active-filter="all">
+    {% for hour_slot in hours %}
+    <div class="time-label">{{ hour_slot.label }}</div>
+    <div class="time-cell">
+      {% for item in hour_slot.events %}
+      <a href="{% url 'planner:event_update' item.pk %}" class="mini-chip {{ item.badge_class }} d-block mb-1 text-decoration-none" data-category="{{ item.category }}">
+        {{ item.time|time:"H:i" }} {{ item.title }}
+      </a>
+      {% endfor %}
+    </div>
+    {% endfor %}
+    {% if current_day == today %}
+    <div class="now-indicator" id="nowIndicator" style="display:none;"></div>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+
+{# ── Year view ── #}
+{% if view_mode == 'year' %}
+<div class="year-grid">
+  {% for m in yearly_months %}
+  <div class="glass-card p-3">
+    <h6 class="text-center mb-2 fw-bold">{{ m.month_name }}</h6>
+    <table class="w-100 mini-month">
+      <thead>
+        <tr>
+          <th>M</th><th>T</th><th>W</th><th>T</th><th>F</th><th>S</th><th>S</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for week in m.grid %}
+        <tr>
+          {% for d in week %}
+          {% if d == 0 %}
+          <td></td>
+          {% else %}
+          <td class="{% if d == today.day and m.month_name == month_name %}today-cell{% endif %}">
+            <a href="{% url 'planner:calendar_month' year forloop.parentloop.counter %}?view=month" class="text-decoration-none text-body">{{ d }}</a>
+          </td>
+          {% endif %}
+          {% endfor %}
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+</div>{# /calendarBody #}
+
+{# ── Legend ── #}
 <div class="d-flex gap-3 mt-3 small text-muted-soft">
   <span><span class="dot dot-event"></span> Event</span>
   <span><span class="dot dot-birthday"></span> Birthday</span>
   <span><span class="dot dot-reminder"></span> Reminder</span>
+  <span class="ms-auto text-muted" id="wxStatus"></span>
 </div>
 {% endblock %}
 
 {% block extra_js %}
 <script src="{% static 'js/calendar.js' %}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+
+  /* ── 1. Now-indicator (day view) ── */
+  const indicator = document.getElementById('nowIndicator');
+  if (indicator) {
+    function updateTimeline() {
+      const now = new Date();
+      const mins = now.getHours() * 60 + now.getMinutes();
+      indicator.style.top = (mins * (80 / 60)) + 'px';  /* 80px per hour cell */
+      indicator.style.display = 'block';
+    }
+    updateTimeline();
+    setInterval(updateTimeline, 60000);
+  }
+
+  /* ── 2. Weather toggle ── */
+  const STORAGE_KEY = 'lifesync_weather_visible';
+  const body        = document.getElementById('calendarBody');
+  const toggleBtn   = document.getElementById('weatherToggleBtn');
+  const wxStatus    = document.getElementById('wxStatus');
+
+  // Restore preference (default: visible)
+  let weatherVisible = localStorage.getItem(STORAGE_KEY) !== 'false';
+  applyWeatherState();
+
+  if (toggleBtn) {
+    toggleBtn.addEventListener('click', () => {
+      weatherVisible = !weatherVisible;
+      localStorage.setItem(STORAGE_KEY, weatherVisible);
+      applyWeatherState();
+    });
+  }
+
+  function applyWeatherState() {
+    if (!body) return;
+    if (weatherVisible) {
+      body.classList.remove('weather-hidden');
+      if (wxStatus) wxStatus.textContent = '';
+    } else {
+      body.classList.add('weather-hidden');
+      if (wxStatus) wxStatus.textContent = '☁ Weather icons hidden';
+    }
+  }
+
+  /* ── 3. Inject weather icons into all day cells via API ── */
+  injectMonthWeather();
+
+  async function injectMonthWeather() {
+    // Only fetch for month / week views
+    const hasTable = document.querySelector('.calendar-table');
+    if (!hasTable) return;
+
+    // Collect all day-cell anchor tags and read their hrefs to get dates
+    const dayLinks = hasTable.querySelectorAll('a.day-cell-link');
+    if (!dayLinks.length) return;
+
+    for (const link of dayLinks) {
+      // href pattern: /planner/day/YYYY/M/D/
+      const m = link.getAttribute('href').match(/\/day\/(\d+)\/(\d+)\/(\d+)\//);
+      if (!m) continue;
+      const [_, yr, mo, dy] = m;
+      const dateStr = `${yr}-${mo.padStart(2,'0')}-${dy.padStart(2,'0')}`;
+
+      // Check if we already have a weather icon rendered (from stored events)
+      const existingWx = link.querySelector('.day-wx');
+      if (existingWx) continue;  // already has one
+
+      try {
+        const res = await fetch(`/planner/api/weather/?date=${dateStr}`);
+        if (!res.ok) continue;
+        const data = await res.json();
+        if (!data.icon) continue;
+
+        // Create a small weather widget
+        const wx = document.createElement('div');
+        wx.className = 'day-wx mt-1';
+        wx.innerHTML = `<img src="https://openweathermap.org/img/wn/${data.icon}.png" alt="${data.description}" title="${data.description} · ${Math.round(data.temp)}°C"><span class="wx-temp">${Math.round(data.temp)}°</span>`;
+
+        // Insert it right after the day-number
+        const dayNum = link.querySelector('.day-number');
+        if (dayNum && dayNum.parentNode) {
+          dayNum.parentNode.insertBefore(wx, dayNum.nextSibling);
+        }
+      } catch (e) {
+        // ignore failed fetches silently
+      }
+    }
+  }
+
+});
+</script>
 {% endblock %}

@@ -17,13 +17,72 @@
   gap: 0.75rem;
   margin-bottom: 1.5rem;
 }
-.weather-toolbar form { flex: 1 1 260px; max-width: 360px; }
+.weather-toolbar form { flex: 1 1 280px; max-width: 420px; }
 .city-pills { display: flex; flex-wrap: wrap; gap: 0.5rem; }
 .city-pill {
   font-family: var(--font-display);
   font-weight: 600;
   font-size: 0.85rem;
 }
+
+.add-city-pill {
+  background: rgba(59, 130, 246, 0.12);
+  border: 1px dashed var(--cat-event);
+  color: var(--cat-event);
+  cursor: pointer;
+  transition: all 0.25s ease;
+  user-select: none;
+}
+.add-city-pill:hover {
+  background: var(--cat-event);
+  color: #ffffff !important;
+  border-style: solid;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.35);
+}
+
+.autocomplete-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 9999;
+  background: var(--surface-solid);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.4);
+  max-height: 280px;
+  overflow-y: auto;
+  display: none;
+}
+.autocomplete-item {
+  display: flex;
+  align-items: center;
+  padding: 0.65rem 1rem;
+  color: var(--ink);
+  text-decoration: none;
+  border-bottom: 1px solid var(--line);
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+.autocomplete-item:last-child {
+  border-bottom: none;
+}
+.autocomplete-item:hover,
+.autocomplete-item.active {
+  background: var(--surface-alt);
+  color: var(--accent);
+}
+.autocomplete-item .city-name {
+  font-weight: 700;
+  font-family: var(--font-display);
+  color: var(--ink);
+}
+.autocomplete-item .city-sub {
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+}
+
 
 .unit-toggle {
   display: inline-flex;

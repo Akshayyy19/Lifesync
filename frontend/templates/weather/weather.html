@@ -12,28 +12,45 @@
 <div data-weather-app
      data-initial-tab="{{ active_tab }}"
      data-initial-unit="{{ active_unit }}"
+     data-default-city="{{ default_city }}"
      data-is-today="{% if day_timeline.is_today %}true{% else %}false{% endif %}">
 
-  <div class="weather-toolbar">
-    <form method="get" class="d-flex gap-2">
-      <input type="hidden" name="date" value="{{ date_query }}">
-      <input type="hidden" name="tab" value="{{ active_tab }}">
-      <input type="hidden" name="unit" value="{{ active_unit }}">
-      <input type="search" name="city" class="form-control" placeholder="Search for a city&hellip;" value="{{ city_query }}">
-      <button class="btn btn-primary" type="submit"><i class="bi bi-search"></i></button>
-    </form>
 
-    <div class="city-pills">
+  <div class="weather-toolbar d-flex align-items-center justify-content-between gap-3 flex-wrap mb-4">
+    <div class="position-relative flex-grow-1" style="max-width: 420px;">
+      <form method="get" class="d-flex gap-2" id="weatherSearchForm">
+        <input type="hidden" name="date" value="{{ date_query }}">
+        <input type="hidden" name="tab" value="{{ active_tab }}">
+        <input type="hidden" name="unit" value="{{ active_unit }}">
+        
+        <div class="position-relative flex-grow-1">
+          <input type="text" id="citySearchInput" name="city" class="form-control w-100" placeholder="Search city (e.g. London, Tokyo)..." value="{{ city_query }}" autocomplete="off">
+          <div id="citySuggestionsDropdown" class="autocomplete-dropdown"></div>
+        </div>
+        <button class="btn btn-primary px-3" type="submit" title="Search"><i class="bi bi-search"></i></button>
+      </form>
+    </div>
+
+    <div class="city-pills d-flex align-items-center gap-2 flex-wrap">
       <a href="?city={{ default_city|urlencode }}&date={{ date_query }}&tab={{ active_tab }}&unit={{ active_unit }}"
-         class="chip city-pill {% if city_query == default_city %}chip-event{% endif %}">
-        <i class="bi bi-geo-alt-fill"></i> {{ default_city }}
+         class="chip city-pill {% if city_query.lower == default_city.lower %}chip-event{% endif %} text-decoration-none" title="Default Location">
+        <i class="bi bi-geo-alt-fill text-warning me-1"></i> Default: {{ default_city }}
       </a>
-      {% if city_query != default_city %}
-      <span class="chip city-pill chip-event">{{ city_query }}</span>
+
+      {% for sc in saved_cities %}
+      <div class="chip city-pill d-inline-flex align-items-center gap-1 {% if city_query.lower == sc.lower %}chip-event{% endif %}">
+        <a href="?city={{ sc|urlencode }}&date={{ date_query }}&tab={{ active_tab }}&unit={{ active_unit }}" class="text-decoration-none text-reset" title="View weather for {{ sc }}">
+          <span>{{ sc }}</span>
+        </a>
+        <a href="?remove_city={{ sc|urlencode }}&date={{ date_query }}&tab={{ active_tab }}&unit={{ active_unit }}" class="text-muted-soft ms-1 text-decoration-none" title="Remove {{ sc }} button" style="font-size: 0.85rem;">&times;</a>
+      </div>
+      {% endfor %}
+
+      {% if saved_cities|length < 3 %}
+      <button type="button" class="chip city-pill add-city-pill text-decoration-none border-0" id="btnAddLocation" data-bs-toggle="modal" data-bs-target="#addLocationModal" title="Add location pill">
+        <i class="bi bi-plus-lg me-1"></i> Add Location
+      </button>
       {% endif %}
-      <a href="?city=London&date={{ date_query }}&tab={{ active_tab }}&unit={{ active_unit }}" class="chip city-pill">London</a>
-      <a href="?city=Tokyo&date={{ date_query }}&tab={{ active_tab }}&unit={{ active_unit }}" class="chip city-pill">Tokyo</a>
-      <a href="?city=New York&date={{ date_query }}&tab={{ active_tab }}&unit={{ active_unit }}" class="chip city-pill">New York</a>
     </div>
 
     {% if current %}
@@ -43,6 +60,39 @@
     </div>
     {% endif %}
   </div>
+
+  <!-- Add Location Modal -->
+  <div class="modal fade" id="addLocationModal" tabindex="-1" aria-labelledby="addLocationModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+      <div class="modal-content glass-card p-3 border-0 shadow-lg" style="background: var(--surface-solid); border: 1px solid var(--line);">
+        <form method="get" action="{% url 'weather:index' %}" id="modalAddCityForm">
+          <input type="hidden" name="add_location" value="1">
+          <input type="hidden" name="date" value="{{ date_query }}">
+          <input type="hidden" name="tab" value="{{ active_tab }}">
+          <input type="hidden" name="unit" value="{{ active_unit }}">
+
+
+          <div class="modal-header border-0 pb-0">
+            <h5 class="modal-title h6 fw-bold" id="addLocationModalLabel"><i class="bi bi-geo-alt-fill text-primary me-2"></i>Add Location Pill</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body py-3">
+            <label for="modalCityInput" class="form-label small text-muted-soft">City Name</label>
+            <input type="text" class="form-control" id="modalCityInput" name="city" placeholder="e.g. Kochi, Dubai, Paris..." required autocomplete="off">
+          </div>
+          <div class="modal-footer border-0 pt-0">
+            <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-sm btn-primary rounded-pill px-3" id="modalConfirmAddBtn">Add &amp; View</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+
+
+
+
 
   {% if error %}
   <div class="alert alert-warning"><i class="bi bi-exclamation-triangle-fill me-2"></i>{{ error }}</div>

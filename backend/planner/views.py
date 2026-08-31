@@ -8,7 +8,7 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 
-from weather.services import get_day_weather_timeline, get_weather_for_date
+from weather.services import get_current_weather, get_day_weather_timeline, get_weather_for_date
 
 from .forms import EventForm
 from .models import Event
@@ -30,20 +30,33 @@ def _attach_weather_snapshot(event, user):
 
 
 @login_required
-def calendar_view(request, year=None, month=None):
+def calendar_view(request, year=None, month=None, day=None):
     today = timezone.localdate()
     year = int(year) if year else today.year
     month = int(month) if month else today.month
+    
+    # If explicit day is provided, use it; if viewing current month, default to today.day; else default to day 1
+    if day:
+        raw_day = int(day)
+    elif year == today.year and month == today.month:
+        raw_day = today.day
+    else:
+        raw_day = 1
+
+    # Clamp raw_day to max days in target month (e.g. Aug 31 -> Sept 30, or Feb 28)
+    max_days = pycalendar.monthrange(year, month)[1]
+    day_num = min(raw_day, max_days)
+    
+    view_mode = request.GET.get('view', 'month')
+
 
     pycalendar.setfirstweekday(pycalendar.MONDAY)
     month_grid = pycalendar.monthcalendar(year, month)
 
-    # Ordinary events + reminders: match the exact year/month.
     events_qs = Event.objects.filter(
         user=request.user, date__year=year, date__month=month,
     ).exclude(category='birthday')
 
-    # Birthdays recur every year, so match on month only (ignore the stored year).
     birthdays_qs = Event.objects.filter(
         user=request.user, category='birthday', date__month=month,
     )
@@ -55,21 +68,110 @@ def calendar_view(request, year=None, month=None):
     weeks = []
     for week in month_grid:
         week_data = []
-        for day in week:
-            if day == 0:
+        for d in week:
+            if d == 0:
                 week_data.append(None)
             else:
-                day_date = date(year, month, day)
+                day_date = date(year, month, d)
+                day_items = sorted(events_by_day.get(d, []), key=lambda e: e.time or min_time.min)
+                # Find the first valid weather icon for this day, if any
+                weather_icon = None
+                weather_temp = None
+                for item in day_items:
+                    if item.weather_icon:
+                        weather_icon = item.weather_icon
+                        weather_temp = item.weather_temp
+                        break
+                        
                 week_data.append({
-                    'day': day,
+                    'day': d,
                     'date': day_date,
-                    'items': sorted(events_by_day.get(day, []), key=lambda e: e.time or min_time.min),
+                    'items': day_items,
                     'is_today': day_date == today,
+                    'weather_icon': weather_icon,
+                    'weather_temp': weather_temp,
                 })
         weeks.append(week_data)
 
     prev_year, prev_month = (year - 1, 12) if month == 1 else (year, month - 1)
     next_year, next_month = (year + 1, 1) if month == 12 else (year, month + 1)
+    
+    # Yearly data
+    yearly_months = []
+    if view_mode == 'year':
+        for m in range(1, 13):
+            grid = pycalendar.monthcalendar(year, m)
+            yearly_months.append({
+                'month_name': pycalendar.month_name[m],
+                'grid': grid
+            })
+            
+    # Weekly data — use monthdatescalendar so we get real dates even for adjacent-month days
+    current_week = []
+    if view_mode == 'week':
+        today_date = date(year, month, day_num)
+        pycalendar.setfirstweekday(pycalendar.MONDAY)
+        cal_obj = pycalendar.Calendar(firstweekday=pycalendar.MONDAY)
+        for week_dates in cal_obj.monthdatescalendar(year, month):
+            if today_date in week_dates:
+                # Build a full day-object for every date in this week
+                for d in week_dates:
+                    d_events = Event.objects.filter(user=request.user, date=d).exclude(category='birthday')
+                    d_birthdays = Event.objects.filter(user=request.user, category='birthday',
+                                                       date__month=d.month, date__day=d.day)
+                    day_items = sorted(list(d_events) + list(d_birthdays),
+                                       key=lambda e: e.time or min_time.min)
+                    wx_icon = next((e.weather_icon for e in day_items if e.weather_icon), None)
+                    wx_temp = next((e.weather_temp  for e in day_items if e.weather_icon), None)
+                    current_week.append({
+                        'day': d.day,
+                        'date': d,
+                        'items': day_items,
+                        'is_today': d == today,
+                        'weather_icon': wx_icon,
+                        'weather_temp': wx_temp,
+                        'other_month': d.month != month,
+                    })
+                break
+
+            
+    # Daily data
+    current_day = None
+    if view_mode == 'day':
+        current_day = date(year, month, day_num)
+        events_today = Event.objects.filter(user=request.user, date=current_day).exclude(category='birthday')
+        birthdays_today = Event.objects.filter(user=request.user, category='birthday', date__month=current_day.month, date__day=current_day.day)
+        
+        events_by_hour = defaultdict(list)
+        all_day_events = []
+        for e in list(events_today) + list(birthdays_today):
+            if e.time:
+                events_by_hour[e.time.hour].append(e)
+            else:
+                all_day_events.append(e)
+        
+        hours = []
+        for h in range(24):
+            hours.append({
+                'hour': h,
+                'label': f"{h:02d}:00",
+                'events': events_by_hour[h]
+            })
+            
+        context_day = {
+            'all_day_events': all_day_events,
+            'hours': hours,
+            'current_day': current_day
+        }
+    else:
+        context_day = {}
+
+    # Fetch today's LIVE weather for the calendar header badge
+    city = getattr(request.user.profile, 'city', None) or 'Chennai'
+    try:
+        today_weather = get_current_weather(city)
+    except Exception:
+        today_weather = None
 
     context = {
         'weeks': weeks,
@@ -77,10 +179,17 @@ def calendar_view(request, year=None, month=None):
         'month_name': pycalendar.month_name[month],
         'year': year,
         'month': month,
+        'day': day_num,
         'today': today,
         'prev_year': prev_year, 'prev_month': prev_month,
         'next_year': next_year, 'next_month': next_month,
         'is_current_month': (year == today.year and month == today.month),
+        'view_mode': view_mode,
+        'yearly_months': yearly_months,
+        'current_week': current_week,
+        'today_weather': today_weather,
+        'city': city,
+        **context_day
     }
     return render(request, 'planner/calendar.html', context)
 
@@ -181,3 +290,59 @@ def event_delete(request, pk):
         return redirect('planner:day_detail', year=year, month=month, day=day)
 
     return render(request, 'planner/event_confirm_delete.html', {'event': event})
+
+from django.http import JsonResponse
+
+@login_required
+def calendar_events_api(request):
+    """Returns JSON array of events for FullCalendar."""
+    start_str = request.GET.get('start')
+    end_str = request.GET.get('end')
+    
+    qs = Event.objects.filter(user=request.user)
+    
+    if start_str and end_str:
+        start_date = start_str[:10]
+        end_date = end_str[:10]
+        qs = qs.filter(date__range=[start_date, end_date])
+    
+    events_data = []
+    for e in qs:
+        color = '#3b82f6' # default event
+        if e.category == 'birthday': color = '#f472b6'
+        elif e.category == 'reminder': color = '#34d399'
+
+        start_time = f"T{e.time.strftime('%H:%M:%S')}" if e.time else ""
+        
+        events_data.append({
+            'id': e.id,
+            'title': e.title,
+            'start': f"{e.date}{start_time}",
+            'allDay': e.time is None,
+            'backgroundColor': color,
+            'borderColor': 'transparent',
+            'extendedProps': {
+                'category': e.category,
+                'location': getattr(e, 'location', ''),
+            }
+        })
+        
+    return JsonResponse(events_data, safe=False)
+
+@login_required
+def weather_api(request):
+    """Returns JSON weather for a given date."""
+    date_str = request.GET.get('date')
+    if not date_str:
+        return JsonResponse({'error': 'date required'}, status=400)
+    
+    city = getattr(request.user.profile, 'city', None) or 'Chennai'
+    try:
+        from weather.services import get_weather_for_date
+        weather = get_weather_for_date(city, date_str)
+        if weather:
+            return JsonResponse(weather)
+        return JsonResponse({'error': 'Not found'}, status=404)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+

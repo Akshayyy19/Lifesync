@@ -17,6 +17,10 @@
 </head>
 <body data-theme-pref="{{ request.user.profile.theme_preference|default:'auto' }}"
       data-weather-condition="{{ weather.condition|default:'' }}"
+      data-weather-temp="{{ weather.temp|default:'' }}"
+      data-weather-is-day="{% if weather.is_day %}true{% elif weather.is_day is False %}false{% else %}{% endif %}"
+      data-sunrise="{{ weather.sunrise|default:'' }}"
+      data-sunset="{{ weather.sunset|default:'' }}"
       style="display:flex; flex-direction:column; min-height:100vh;">
 
 <header class="sky-header">

@@ -3,24 +3,43 @@ Weather service with dual provider support & Open-Meteo Air Quality integration.
 Provides MSN-Weather style multi-tab metrics: Overview, Precipitation, Wind,
 Air Quality, Humidity, Pressure, UV, and Visibility with zero-lag batching & caching.
 """
+# Import the Python requests library to execute HTTP GET requests to external weather APIs
 import requests
-from datetime import datetime, timedelta
+
+# Import datetime and timedelta to parse dates and calculate forecast offsets
+from datetime import datetime, timedelta, timezone as dt_timezone
+
+# Import Django settings to access OPENWEATHERMAP_API_KEY from environment/.env
 from django.conf import settings
+
+# Import timezone module to ensure server operations follow localized dates
 from django.utils import timezone
 
+# Base endpoint for OpenWeatherMap API v2.5
 BASE_URL_OWM = 'https://api.openweathermap.org/data/2.5'
+
+# Geocoding endpoint to convert human-readable city names into latitude/longitude coordinates
 GEO_URL_OPENMETEO = 'https://geocoding-api.open-meteo.com/v1/search'
-FORECAST_URL_OPENMETEO = 'https://api.open-meteo.com/v1/forecast'
-ARCHIVE_URL_OPENMETEO = 'https://archive-api.open-meteo.com/v1/archive'
+
+# Note: api.open-meteo.com and archive-api.open-meteo.com may be blocked on some networks.
+# historical-forecast-api.open-meteo.com serves both historical and forecast data and is accessible.
+FORECAST_URL_OPENMETEO = 'https://historical-forecast-api.open-meteo.com/v1/forecast'
+ARCHIVE_URL_OPENMETEO = 'https://historical-forecast-api.open-meteo.com/v1/forecast'
+
+# Endpoint for real-time and forecasted air quality metrics (AQI, particulate matter)
 AIR_QUALITY_URL_OPENMETEO = 'https://air-quality-api.open-meteo.com/v1/air-quality'
-REQUEST_TIMEOUT = 5  # seconds
 
-# In-memory caches to guarantee 0ms latency for repeated requests
-GEO_CACHE = {}
-TIMELINE_CACHE = {}
-AQI_CACHE = {}
-CARDS_CACHE = {}
+# Maximum seconds to wait for an API HTTP response before timing out
+REQUEST_TIMEOUT = 10
 
+# In-memory dictionary caches to store API responses and guarantee 0ms latency for repeated requests
+GEO_CACHE = {}         # Caches {city_name: {lat, lon, country, ...}}
+TIMELINE_CACHE = {}    # Caches {city_date: hourly_timeline_data}
+AQI_CACHE = {}         # Caches {city_date: air_quality_metrics}
+CARDS_CACHE = {}       # Caches {city_date_15: multi_day_cards}
+
+# World Meteorological Organization (WMO) weather code mapping:
+# code: (human_readable_description, internal_condition_name, default_icon_code)
 WMO_WEATHER_CODES = {
     0: ("Clear sky", "sunny", "01"),
     1: ("Mainly clear", "sunny", "01"),
@@ -54,6 +73,7 @@ WMO_WEATHER_CODES = {
 
 
 def _icon_to_condition(icon_code):
+    """Maps an icon code prefix into a simplified UI condition category."""
     if not icon_code:
         return 'cloudy'
     code = icon_code[:2]
@@ -69,6 +89,62 @@ def _icon_to_condition(icon_code):
     return mapping.get(code, 'cloudy')
 
 
+def _resolve_condition(base_cond, is_day, temp=20, feels_like=None, precipitation=0.0, weather_code=None):
+    """
+    Intelligently maps weather metrics to exact UI theme condition keys:
+    - 'hot-summer': Hot clear or sunny day (>= 29°C), or negligible drizzle during hot summer sun.
+    - 'sun-rain-mix': Daytime sun and rain mixed together (sunshower: drizzle / light rain / showers with sun).
+    - 'rainy': Moderate or heavy rain.
+    - 'cloudy': Overcast or mostly cloudy skies.
+    - 'sunny': Pleasant clear daytime (< 29°C).
+    - 'clear-night': Clear starry night.
+    - 'thunderstorm': Thunder, lightning and heavy showers.
+    - 'snowy': Snow or freezing precipitation.
+    - 'misty': Fog, mist, or haze.
+    """
+    effective_temp = temp if temp is not None else 20
+    effective_feels = feels_like if feels_like is not None else effective_temp
+    precip = float(precipitation) if precipitation is not None else 0.0
+
+    if base_cond in ('thunderstorm', 'snowy', 'misty'):
+        return base_cond
+
+    if is_day:
+        is_rain_code = (base_cond == 'rainy') or (weather_code in (51, 53, 55, 61, 63, 65, 80, 81, 82))
+        if is_rain_code:
+            # If precipitation is tiny/trace (<= 0.2mm) and temp is hot (temp >= 29 or feels_like >= 31),
+            # this is a normal hot summer day where tropical radar/forecast models report trace humidity.
+            if precip <= 0.2 and (effective_temp >= 29 or effective_feels >= 31):
+                return 'hot-summer'
+            # If light drizzle / light showers during the day (< 2.0 mm or codes 51/53/80), it's a sun & rain mix!
+            if precip < 2.0 or weather_code in (51, 53, 80):
+                return 'sun-rain-mix'
+            # Moderate to heavy rain
+            return 'rainy'
+
+        if base_cond in ('sunny', 'clear'):
+            if effective_temp >= 29 or effective_feels >= 31:
+                return 'hot-summer'
+            return 'sunny'
+
+        if base_cond == 'cloudy':
+            if weather_code in (1, 2) and (effective_temp >= 31 or effective_feels >= 34):
+                return 'hot-summer'
+            return 'cloudy'
+
+        return 'sunny'
+    else:
+        # Night
+        is_rain_code = (base_cond == 'rainy') or (weather_code in (51, 53, 55, 61, 63, 65, 80, 81, 82))
+        if is_rain_code:
+            if precip <= 0.2 and effective_temp >= 28:
+                return 'clear-night'
+            return 'rainy'
+        if base_cond == 'cloudy':
+            return 'cloudy'
+        return 'clear-night'
+
+
 def _format_time_12h(dt):
     """Format a datetime as '6:15 AM' without strftime's platform-specific '%-I'
     (that directive raises ValueError on Windows, which is what this project is developed on)."""
@@ -77,36 +153,54 @@ def _format_time_12h(dt):
     return f'{hour12}:{dt.minute:02d} {ampm}'
 
 
+# ------------------------------------------------------------------------------
+# Primary Function: get_current_weather
+# Strategy: Dual-provider fallback. Tries OpenWeatherMap first if API key exists;
+#           falls back to Open-Meteo if key is missing or request fails.
+# ------------------------------------------------------------------------------
 def get_current_weather(city):
+    # Return None immediately if city argument is empty or blank
     if not city or not city.strip():
         return None
 
+    # Clean whitespace from city query
     city = city.strip()
+    # Read API key from settings (configured in .env)
     api_key = getattr(settings, 'OPENWEATHERMAP_API_KEY', None)
 
+    # If an API key is available, attempt fetching from OpenWeatherMap first
     if api_key:
         result = _get_current_weather_owm(city, api_key)
         if result:
             return result
 
+    # Fallback to Open-Meteo (keyless free weather service)
     return _get_current_weather_openmeteo(city)
 
 
+# ------------------------------------------------------------------------------
+# Primary Function: get_forecast
+# Strategy: Dual-provider fallback for multi-day forecast.
+# ------------------------------------------------------------------------------
 def get_forecast(city, days=5):
+    # Validate input
     if not city or not city.strip():
         return None
 
     city = city.strip()
     api_key = getattr(settings, 'OPENWEATHERMAP_API_KEY', None)
 
+    # Try OpenWeatherMap 5-day forecast first if key is present
     if api_key:
         result = _get_forecast_owm(city, api_key, days=days)
         if result:
             return result
 
+    # Fallback to Open-Meteo forecast API
     return _get_forecast_openmeteo(city, days=days)
 
 
+# Feature codes returned by geocoding APIs that signify a country rather than a city
 COUNTRY_FEATURE_CODES = {'PCLI', 'PCLD', 'PCL', 'PCLS', 'TERR', 'CONT'}
 
 
@@ -320,6 +414,10 @@ def get_day_weather_timeline(city, target_date):
     if not times:
         return None
 
+    tz_offset_sec = data.get('utc_offset_seconds') or 0
+    now_local = datetime.now(dt_timezone.utc) + timedelta(seconds=tz_offset_sec)
+    current_hour = now_local.hour if is_today else -1
+
     timeline = []
     for i in range(len(times)):
         t_str = times[i]
@@ -332,9 +430,19 @@ def get_day_weather_timeline(city, target_date):
         code = codes[i] if i < len(codes) else 0
         is_day_flag = bool(is_days[i]) if (i < len(is_days) and is_days[i] is not None) else (6 <= hour <= 19)
 
-        desc, condition, base_icon = WMO_WEATHER_CODES.get(code, ("Cloudy", "cloudy", "02"))
-        if condition == 'sunny' and not is_day_flag:
-            condition = 'clear-night'
+        desc, base_cond, base_icon = WMO_WEATHER_CODES.get(code, ("Cloudy", "cloudy", "02"))
+        t_temp = round(temps[i]) if (i < len(temps) and temps[i] is not None) else 0
+        t_feels = round(feels[i]) if (i < len(feels) and feels[i] is not None) else t_temp
+        t_precip = precips[i] if (i < len(precips) and precips[i] is not None) else 0.0
+
+        condition = _resolve_condition(base_cond, is_day_flag, temp=t_temp, feels_like=t_feels, precipitation=t_precip, weather_code=code)
+        if condition == 'hot-summer':
+            desc = "Hot & Sunny" if is_day_flag else desc
+            icon = '01d' if is_day_flag else '01n'
+        elif condition == 'sun-rain-mix':
+            desc = "Sun & Showers"
+            icon = '10d'
+        elif condition == 'clear-night':
             icon = base_icon + 'n'
         else:
             icon = base_icon + ('d' if is_day_flag else 'n')
@@ -352,6 +460,7 @@ def get_day_weather_timeline(city, target_date):
             'raw_time': time_part,
             'time': time_display,
             'hour': hour,
+            'is_current_hour': is_today and (hour == current_hour),
             'temp': round(temps[i]) if (i < len(temps) and temps[i] is not None) else 0,
             'feels_like': round(feels[i]) if (i < len(feels) and feels[i] is not None) else 0,
             'precip_prob': precip_probs[i] if (i < len(precip_probs) and precip_probs[i] is not None) else 0,
@@ -398,6 +507,10 @@ def get_day_weather_timeline(city, target_date):
         'description': mid_entry.get('description', 'Cloudy'),
         'condition': mid_entry.get('condition', 'cloudy'),
         'icon': mid_entry.get('icon', '02d'),
+        'current_local_time': _format_time_12h(now_local) if is_today else None,
+        'current_hour': current_hour,
+        'timezone': data.get('timezone', ''),
+        'utc_offset_seconds': tz_offset_sec,
         'timeline': timeline,
     }
     TIMELINE_CACHE[cache_key] = res
@@ -600,11 +713,22 @@ def get_8_day_cards(city, center_date=None):
             label = d.strftime('%a, %b %d')
 
         code = codes[i] if i < len(codes) else 0
-        desc, condition, base_icon = WMO_WEATHER_CODES.get(code, ("Cloudy", "cloudy", "02"))
+        desc, base_cond, base_icon = WMO_WEATHER_CODES.get(code, ("Cloudy", "cloudy", "02"))
 
         t_max = round(t_maxs[i]) if (i < len(t_maxs) and t_maxs[i] is not None) else 30
         t_min = round(t_mins[i]) if (i < len(t_mins) and t_mins[i] is not None) else 24
         t_avg = round((t_max + t_min) / 2.0)
+        c_precip = (precip_sums[i] or 0) if i < len(precip_sums) else 0
+
+        condition = _resolve_condition(base_cond, True, temp=t_max, feels_like=t_max, precipitation=c_precip, weather_code=code)
+        if condition == 'hot-summer':
+            desc = "Hot & Sunny"
+            icon = '01d'
+        elif condition == 'sun-rain-mix':
+            desc = "Sun & Showers"
+            icon = '10d'
+        else:
+            icon = base_icon + 'd'
 
         cards.append({
             'date': d_str,
@@ -617,7 +741,7 @@ def get_8_day_cards(city, center_date=None):
             'temp_high': t_max,
             'temp_low': t_min,
             'temp_avg': t_avg,
-            'precip_cm': round((precip_sums[i] or 0) / 10.0, 2) if i < len(precip_sums) else 0,
+            'precip_cm': round(c_precip / 10.0, 2),
             'precip_prob': precip_probs[i] if (i < len(precip_probs) and precip_probs[i] is not None) else 0,
             'wind_speed': round(wind_speeds[i]) if (i < len(wind_speeds) and wind_speeds[i] is not None) else 12,
             'wind_gust': round(wind_gusts[i]) if (i < len(wind_gusts) and wind_gusts[i] is not None) else 30,
@@ -625,7 +749,7 @@ def get_8_day_cards(city, center_date=None):
             'uv': round(uv_maxes[i], 1) if (i < len(uv_maxes) and uv_maxes[i] is not None) else None,
             'description': desc,
             'condition': condition,
-            'icon': base_icon + 'd',
+            'icon': icon,
             'is_selected': d_str == center_date.strftime('%Y-%m-%d'),
         })
 
@@ -663,29 +787,62 @@ def _get_current_weather_owm(city, api_key):
 
     weather_block = (data.get('weather') or [{}])[0]
     icon = weather_block.get('icon', '01d')
+    weather_id = weather_block.get('id', 800)
+    is_day_flag = icon.endswith('d')
     tz_offset = data.get('timezone', 0)  # seconds offset from UTC, provided by OWM
     sunrise_ts = data.get('sys', {}).get('sunrise')
     sunset_ts = data.get('sys', {}).get('sunset')
     sunrise = _format_time_12h(datetime.utcfromtimestamp(sunrise_ts + tz_offset)) if sunrise_ts else None
     sunset = _format_time_12h(datetime.utcfromtimestamp(sunset_ts + tz_offset)) if sunset_ts else None
 
+    # Calculate exact local time and date for the city
+    dt_now = datetime.utcfromtimestamp(int(datetime.utcnow().timestamp()) + tz_offset)
+    local_time = _format_time_12h(dt_now)
+    local_time_24 = dt_now.strftime('%H:%M')
+    local_date = dt_now.strftime('%A, %b %d, %Y')
+    offset_h = tz_offset // 3600
+    offset_m = abs(tz_offset % 3600) // 60
+    tz_label = f"UTC{'+' if tz_offset >= 0 else ''}{offset_h:+03d}:{offset_m:02d}" if tz_offset else "UTC"
+
+    temp = round(data.get('main', {}).get('temp', 0))
+    feels_like = round(data.get('main', {}).get('feels_like', 0))
+    rain_obj = data.get('rain', {})
+    precip = rain_obj.get('1h', 0.0) if isinstance(rain_obj, dict) else 0.0
+
+    base_cond = _icon_to_condition(icon)
+    condition = _resolve_condition(base_cond, is_day_flag, temp=temp, feels_like=feels_like, precipitation=precip, weather_code=weather_id)
+
+    desc = weather_block.get('description', '').title()
+    if condition == 'hot-summer':
+        desc = "Hot & Sunny" if is_day_flag else desc
+        icon = '01d' if is_day_flag else '01n'
+    elif condition == 'sun-rain-mix':
+        desc = "Sun & Passing Showers"
+        icon = '10d'
+
     return {
         'city': data.get('name') or city,
         'country': data.get('sys', {}).get('country', ''),
-        'temp': round(data.get('main', {}).get('temp', 0)),
-        'feels_like': round(data.get('main', {}).get('feels_like', 0)),
+        'temp': temp,
+        'feels_like': feels_like,
         'temp_min': round(data.get('main', {}).get('temp_min', 0)),
         'temp_max': round(data.get('main', {}).get('temp_max', 0)),
         'humidity': data.get('main', {}).get('humidity'),
         'pressure': data.get('main', {}).get('pressure'),
         'wind_speed': round(data.get('wind', {}).get('speed', 0) * 3.6, 1),  # OWM metric units = m/s; convert to km/h
-        'description': weather_block.get('description', '').title(),
+        'description': desc,
         'main': weather_block.get('main', ''),
         'icon': icon,
-        'condition': _icon_to_condition(icon),
-        'is_day': icon.endswith('d'),
+        'condition': condition,
+        'is_day': is_day_flag,
+        'precipitation': precip,
         'sunrise': sunrise,
         'sunset': sunset,
+        'local_time': local_time,
+        'local_time_24': local_time_24,
+        'local_date': local_date,
+        'timezone': tz_label,
+        'utc_offset_seconds': tz_offset,
     }
 
 
@@ -753,7 +910,7 @@ def _get_current_weather_openmeteo(city):
             params={
                 'latitude': geo['lat'],
                 'longitude': geo['lon'],
-                'current': 'temperature_2m,relative_humidity_2m,apparent_temperature,surface_pressure,wind_speed_10m,weather_code,is_day',
+                'current': 'temperature_2m,relative_humidity_2m,apparent_temperature,surface_pressure,wind_speed_10m,weather_code,is_day,precipitation,rain',
                 'daily': 'weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset',
                 'wind_speed_unit': 'kmh',
                 'timezone': 'auto',
@@ -770,18 +927,29 @@ def _get_current_weather_openmeteo(city):
 
     code = current.get('weather_code', 0)
     is_day_flag = bool(current.get('is_day', 1))
+    precip = float(current.get('precipitation') or current.get('rain') or 0.0)
+    temp = round(current.get('temperature_2m', 0))
+    feels_like = round(current.get('apparent_temperature', 0))
 
-    desc, condition, base_icon = WMO_WEATHER_CODES.get(code, ("Cloudy", "cloudy", "02"))
-    if condition == 'sunny' and not is_day_flag:
-        condition = 'clear-night'
+    desc, base_cond, base_icon = WMO_WEATHER_CODES.get(code, ("Cloudy", "cloudy", "02"))
+
+    condition = _resolve_condition(base_cond, is_day_flag, temp=temp, feels_like=feels_like, precipitation=precip, weather_code=code)
+
+    if condition == 'hot-summer':
+        desc = "Hot & Sunny" if is_day_flag else desc
+        icon = '01d' if is_day_flag else '01n'
+    elif condition == 'sun-rain-mix':
+        desc = "Sun & Passing Showers"
+        icon = '10d'
+    elif condition == 'clear-night':
         icon = base_icon + 'n'
     else:
         icon = base_icon + ('d' if is_day_flag else 'n')
 
     temp_max_list = daily.get('temperature_2m_max') or []
     temp_min_list = daily.get('temperature_2m_min') or []
-    temp_max = temp_max_list[0] if temp_max_list else current.get('temperature_2m', 0)
-    temp_min = temp_min_list[0] if temp_min_list else current.get('temperature_2m', 0)
+    temp_max = temp_max_list[0] if temp_max_list else temp
+    temp_min = temp_min_list[0] if temp_min_list else temp
 
     sunrise_list = daily.get('sunrise') or []
     sunset_list = daily.get('sunset') or []
@@ -798,11 +966,21 @@ def _get_current_weather_openmeteo(city):
         except ValueError:
             sunset = None
 
+    tz_name = data.get('timezone') or ''
+    tz_offset_sec = data.get('utc_offset_seconds') or 0
+
+    # Calculate exact current local time and date for the city
+    now_utc = datetime.now(dt_timezone.utc)
+    local_dt = now_utc + timedelta(seconds=tz_offset_sec)
+    local_time = _format_time_12h(local_dt)
+    local_time_24 = local_dt.strftime('%H:%M')
+    local_date = local_dt.strftime('%A, %b %d, %Y')
+
     return {
         'city': geo['name'],
         'country': geo['country'],
-        'temp': round(current.get('temperature_2m', 0)),
-        'feels_like': round(current.get('apparent_temperature', 0)),
+        'temp': temp,
+        'feels_like': feels_like,
         'temp_min': round(temp_min),
         'temp_max': round(temp_max),
         'humidity': current.get('relative_humidity_2m'),
@@ -813,9 +991,15 @@ def _get_current_weather_openmeteo(city):
         'icon': icon,
         'condition': condition,
         'is_day': is_day_flag,
+        'precipitation': precip,
         'is_country': geo.get('is_country', False),
         'sunrise': sunrise,
         'sunset': sunset,
+        'local_time': local_time,
+        'local_time_24': local_time_24,
+        'local_date': local_date,
+        'timezone': tz_name,
+        'utc_offset_seconds': tz_offset_sec,
     }
 
 

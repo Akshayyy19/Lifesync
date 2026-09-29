@@ -14,7 +14,7 @@
 <div class="card p-3 mb-4 border-0 shadow-sm" style="background: linear-gradient(135deg, var(--surface-alt), rgba(255,255,255,0.05)); border-radius: 12px;">
   <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
     <div class="d-flex align-items-center gap-3">
-      <i class="bi bi-{% if day_timeline.condition == 'sunny' %}sun-fill{% elif day_timeline.condition == 'clear-night' %}moon-stars-fill{% elif day_timeline.condition == 'rainy' %}cloud-rain-fill{% elif day_timeline.condition == 'snowy' %}snow{% elif day_timeline.condition == 'thunderstorm' %}cloud-lightning-rain-fill{% elif day_timeline.condition == 'misty' %}cloud-haze2-fill{% else %}cloud-fill{% endif %}" style="font-size: 2.2rem; color: var(--accent-ink);"></i>
+      <i class="bi bi-{% if day_timeline.condition == 'sunny' or day_timeline.condition == 'hot-summer' %}sun-fill{% elif day_timeline.condition == 'clear-night' or day_timeline.condition == 'hot-summer-night' %}moon-stars-fill{% elif day_timeline.condition == 'sun-rain-mix' %}cloud-sun-fill{% elif day_timeline.condition == 'rainy' %}cloud-rain-fill{% elif day_timeline.condition == 'snowy' %}snow{% elif day_timeline.condition == 'thunderstorm' %}cloud-lightning-rain-fill{% elif day_timeline.condition == 'misty' %}cloud-haze2-fill{% else %}cloud-fill{% endif %}" style="font-size: 2.2rem; color: var(--accent-ink);"></i>
       <div>
         <div class="fw-semibold" style="font-size: 1.1rem;">Weather in {{ city }}</div>
         <div class="text-muted-soft small"><strong>{{ day_timeline.temp_avg }}&deg;C</strong> ({{ day_timeline.temp_min }}&deg; &ndash; {{ day_timeline.temp_max }}&deg;) &middot; {{ day_timeline.description }}</div>
@@ -33,7 +33,7 @@
     {% for slot in day_timeline.timeline %}
     <div class="text-center p-2 rounded" style="min-width: 80px; background: rgba(0,0,0,0.03);">
       <div class="font-mono small text-muted-soft" style="font-size: 0.75rem;">{{ slot.time }}</div>
-      <i class="bi bi-{% if slot.condition == 'sunny' %}sun-fill{% elif slot.condition == 'clear-night' %}moon-stars-fill{% elif slot.condition == 'rainy' %}cloud-rain-fill{% elif slot.condition == 'snowy' %}snow{% elif slot.condition == 'thunderstorm' %}cloud-lightning-rain-fill{% elif slot.condition == 'misty' %}cloud-haze2-fill{% else %}cloud-fill{% endif %}" style="font-size: 1.2rem; color: var(--accent-ink); margin: 0.2rem 0; display: block;"></i>
+      <i class="bi bi-{% if slot.condition == 'sunny' or slot.condition == 'hot-summer' %}sun-fill{% elif slot.condition == 'clear-night' or slot.condition == 'hot-summer-night' %}moon-stars-fill{% elif slot.condition == 'sun-rain-mix' %}cloud-sun-fill{% elif slot.condition == 'rainy' %}cloud-rain-fill{% elif slot.condition == 'snowy' %}snow{% elif slot.condition == 'thunderstorm' %}cloud-lightning-rain-fill{% elif slot.condition == 'misty' %}cloud-haze2-fill{% else %}cloud-fill{% endif %}" style="font-size: 1.2rem; color: var(--accent-ink); margin: 0.2rem 0; display: block;"></i>
       <div class="fw-bold small">{{ slot.temp }}&deg;C</div>
       <div class="small text-muted-soft font-mono" style="font-size: 0.7rem;"><i class="bi bi-wind"></i> {{ slot.wind_speed }}</div>
     </div>

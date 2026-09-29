@@ -18,7 +18,7 @@
 
           {% if predicted_weather %}
           <div class="alert d-flex align-items-center gap-3 py-2 px-3 mb-3 border-0" style="background: var(--surface-alt); border-radius: 10px;">
-            <i class="bi bi-{% if predicted_weather.condition == 'sunny' %}sun-fill{% elif predicted_weather.condition == 'clear-night' %}moon-stars-fill{% elif predicted_weather.condition == 'rainy' %}cloud-rain-fill{% elif predicted_weather.condition == 'snowy' %}snow{% elif predicted_weather.condition == 'thunderstorm' %}cloud-lightning-rain-fill{% elif predicted_weather.condition == 'misty' %}cloud-haze2-fill{% else %}cloud-fill{% endif %}" style="font-size:1.6rem; color:var(--accent-ink);"></i>
+            <i class="bi bi-{% if predicted_weather.condition == 'sunny' or predicted_weather.condition == 'hot-summer' %}sun-fill{% elif predicted_weather.condition == 'clear-night' or predicted_weather.condition == 'hot-summer-night' %}moon-stars-fill{% elif predicted_weather.condition == 'sun-rain-mix' %}cloud-sun-fill{% elif predicted_weather.condition == 'rainy' %}cloud-rain-fill{% elif predicted_weather.condition == 'snowy' %}snow{% elif predicted_weather.condition == 'thunderstorm' %}cloud-lightning-rain-fill{% elif predicted_weather.condition == 'misty' %}cloud-haze2-fill{% else %}cloud-fill{% endif %}" style="font-size:1.6rem; color:var(--accent-ink);"></i>
             <div>
               <div class="fw-medium small">Predicted Weather Forecast for {{ target_date }}</div>
               <div class="text-muted-soft small"><strong>{{ predicted_weather.temp }}&deg;C</strong> &middot; {{ predicted_weather.description }}</div>

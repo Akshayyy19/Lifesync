@@ -106,3 +106,99 @@ class WeatherPageTests(TestCase):
         resp = self.client.get('/weather/')
         self.assertEqual(resp.status_code, 302)
         self.assertIn('/accounts/login', resp.url)
+
+
+class ConditionResolutionTests(TestCase):
+    def test_hot_summer_day_with_trace_precipitation(self):
+        """When it is 31.5°C in daylight and precipitation is 0.1mm (e.g. WMO 51),
+        it must resolve to 'hot-summer', NOT 'rainy', preventing false rain in summer."""
+        from weather.services import _resolve_condition
+        cond = _resolve_condition(
+            base_cond='rainy',
+            is_day=True,
+            temp=32,
+            feels_like=37,
+            precipitation=0.1,
+            weather_code=51,
+        )
+        self.assertEqual(cond, 'hot-summer')
+
+    def test_sun_and_rain_mix_daytime(self):
+        """When it is daytime and light rain / showers occurs (e.g. 0.8mm),
+        it should resolve to 'sun-rain-mix' (sunshower)."""
+        from weather.services import _resolve_condition
+        cond = _resolve_condition(
+            base_cond='rainy',
+            is_day=True,
+            temp=26,
+            feels_like=26,
+            precipitation=0.8,
+            weather_code=80,
+        )
+        self.assertEqual(cond, 'sun-rain-mix')
+
+    def test_heavy_rain_resolves_to_rainy(self):
+        """When precipitation is significant (>= 2.0mm), it resolves to 'rainy'."""
+        from weather.services import _resolve_condition
+        cond = _resolve_condition(
+            base_cond='rainy',
+            is_day=True,
+            temp=24,
+            precipitation=4.5,
+            weather_code=65,
+        )
+        self.assertEqual(cond, 'rainy')
+
+    def test_hot_clear_day(self):
+        """High temperature clear day resolves to 'hot-summer'."""
+        from weather.services import _resolve_condition
+        cond = _resolve_condition(
+            base_cond='sunny',
+            is_day=True,
+            temp=33,
+            feels_like=36,
+            precipitation=0.0,
+            weather_code=0,
+        )
+        self.assertEqual(cond, 'hot-summer')
+
+    def test_mild_clear_day(self):
+        """Mild clear day resolves to 'sunny'."""
+        from weather.services import _resolve_condition
+        cond = _resolve_condition(
+            base_cond='sunny',
+            is_day=True,
+            temp=24,
+            feels_like=24,
+            precipitation=0.0,
+            weather_code=0,
+        )
+        self.assertEqual(cond, 'sunny')
+
+    def test_clear_night(self):
+        """Nighttime clear sky resolves to 'clear-night'."""
+        from weather.services import _resolve_condition
+        cond = _resolve_condition(
+            base_cond='sunny',
+            is_day=False,
+            temp=22,
+            precipitation=0.0,
+            weather_code=0,
+        )
+        self.assertEqual(cond, 'clear-night')
+
+
+class WeatherContextProcessorTests(TestCase):
+    def test_context_processor_returns_weather(self):
+        """Verify that the weather context processor provides the 'weather' key."""
+        from django.test import RequestFactory
+        from weather.context_processors import current_weather
+        factory = RequestFactory()
+        req = factory.get('/')
+        req.user = User.objects.create_user('cptestuser', password='password123')
+        req.session = {}
+
+        with patch('weather.context_processors.get_current_weather', return_value={'city': 'Chennai', 'temp': 30, 'condition': 'hot-summer'}):
+            ctx = current_weather(req)
+            self.assertIn('weather', ctx)
+            self.assertEqual(ctx['weather']['condition'], 'hot-summer')

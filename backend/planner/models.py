@@ -27,6 +27,22 @@ class Event(models.Model):
         ('reminder', 'Reminder'),
     ]
 
+    # Venue type choices: describes the physical setting of the event
+    VENUE_TYPE_CHOICES = [
+        ('', 'No venue type'),
+        ('indoor', 'Indoor'),
+        ('outdoor', 'Outdoor'),
+        ('stadium', 'Stadium / Arena'),
+        ('hotel', 'Hotel / Resort'),
+        ('restaurant', 'Restaurant / Cafe'),
+        ('office', 'Office / Conference'),
+        ('school', 'School / University'),
+        ('home', 'Home / Private'),
+        ('park', 'Park / Garden'),
+        ('virtual', 'Virtual / Online'),
+        ('other', 'Other'),
+    ]
+
     # Pre-defined minutes before an event to trigger a reminder notification
     REMINDER_CHOICES = [
         (0, 'At the scheduled time'),
@@ -59,6 +75,12 @@ class Event(models.Model):
 
     # Optional physical or virtual location of the event
     location = models.CharField(max_length=200, blank=True)
+
+    # Venue type: describes the kind of place the event is held
+    venue_type = models.CharField(
+        max_length=20, choices=VENUE_TYPE_CHOICES, blank=True, default='',
+        help_text='The kind of venue where the event takes place.',
+    )
 
     # Boolean flag indicating if this event recurs on this day every year (always True for birthdays)
     is_recurring_yearly = models.BooleanField(

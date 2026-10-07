@@ -1,43 +1,469 @@
 {% extends "base.html" %}
 {% block title %}{{ date|date:"d M Y" }}{% endblock %}
 
+{% block extra_head %}
+<style>
+/* ── Back Navigation Pill ─────────────────────────────────────── */
+.back-pill-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.38rem 0.95rem;
+  border-radius: 20px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--ink-soft);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  text-decoration: none;
+  transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+.back-pill-btn:hover {
+  color: var(--ink);
+  background: var(--surface-solid);
+  border-color: var(--accent);
+  transform: translateX(-3px);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.09);
+}
+.back-pill-btn i {
+  font-size: 1.05rem;
+  transition: transform 0.2s ease;
+}
+.back-pill-btn:hover i {
+  transform: translateX(-3px);
+}
+
+/* ── Weather Timeline Card ─────────────────────────────────────── */
+.timeline-card {
+  border-radius: 18px;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid var(--line);
+  padding: 1.25rem 1.4rem;
+  margin-bottom: 1.75rem;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
+
+  /* Light mode */
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.92) 0%, rgba(240, 249, 255, 0.88) 100%);
+  box-shadow: 0 10px 30px -8px rgba(56, 189, 248, 0.15), 0 4px 12px rgba(15, 23, 42, 0.04);
+}
+body.theme-night .timeline-card {
+  /* Dark mode */
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.88) 0%, rgba(30, 41, 59, 0.84) 100%);
+  box-shadow: 0 14px 40px -10px rgba(0, 0, 0, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+}
+
+.timeline-card::before {
+  content: '';
+  position: absolute;
+  top: -60px;
+  right: -60px;
+  width: 240px;
+  height: 240px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(56, 189, 248, 0.16) 0%, transparent 70%);
+  pointer-events: none;
+}
+body.theme-night .timeline-card::before {
+  background: radial-gradient(circle, rgba(99, 102, 241, 0.18) 0%, transparent 70%);
+}
+
+/* Header */
+.timeline-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1.15rem;
+}
+.timeline-hero {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+.timeline-hero-icon {
+  font-size: 2.6rem;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.timeline-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--ink);
+  letter-spacing: -0.01em;
+}
+.timeline-subtitle {
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+  margin-top: 0.15rem;
+}
+
+/* Badges */
+.timeline-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+.timeline-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.32rem 0.85rem;
+  border-radius: 20px;
+  font-family: var(--font-mono);
+  letter-spacing: 0.02em;
+}
+.timeline-badge.forecast {
+  background: rgba(99, 102, 241, 0.14);
+  color: #4f46e5;
+  border: 1px solid rgba(99, 102, 241, 0.32);
+}
+body.theme-night .timeline-badge.forecast {
+  background: rgba(99, 102, 241, 0.22);
+  color: #a78bfa;
+  border: 1px solid rgba(99, 102, 241, 0.4);
+}
+.timeline-badge.live {
+  background: rgba(34, 197, 94, 0.14);
+  color: #15803d;
+  border: 1px solid rgba(34, 197, 94, 0.32);
+}
+body.theme-night .timeline-badge.live {
+  background: rgba(34, 197, 94, 0.2);
+  color: #4ade80;
+  border: 1px solid rgba(34, 197, 94, 0.4);
+}
+.timeline-badge.past {
+  background: rgba(107, 114, 128, 0.14);
+  color: #4b5563;
+  border: 1px solid rgba(107, 114, 128, 0.28);
+}
+body.theme-night .timeline-badge.past {
+  background: rgba(107, 114, 128, 0.2);
+  color: #9ca3af;
+  border: 1px solid rgba(107, 114, 128, 0.35);
+}
+
+/* Scroll Arrows */
+.timeline-nav-arrows {
+  display: inline-flex;
+  gap: 0.35rem;
+}
+.timeline-arrow-btn {
+  background: var(--surface-alt);
+  border: 1px solid var(--line);
+  color: var(--ink);
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  font-size: 0.85rem;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.timeline-arrow-btn:hover {
+  background: var(--accent);
+  color: #ffffff;
+  border-color: var(--accent);
+  transform: scale(1.08);
+}
+.timeline-arrow-btn:active {
+  transform: scale(0.95);
+}
+
+/* Horizontal Strip */
+.timeline-strip-wrap {
+  position: relative;
+}
+.timeline-strip {
+  display: flex;
+  gap: 0.7rem;
+  overflow-x: auto;
+  padding: 0.5rem 0.2rem 0.75rem;
+  scroll-behavior: smooth;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(56, 189, 248, 0.35) transparent;
+}
+.timeline-strip::-webkit-scrollbar {
+  height: 6px;
+}
+.timeline-strip::-webkit-scrollbar-track {
+  background: transparent;
+}
+.timeline-strip::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.35);
+  border-radius: 10px;
+}
+body.theme-night .timeline-strip::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+/* Individual Hour Slot */
+.timeline-slot {
+  min-width: 96px;
+  padding: 0.85rem 0.55rem;
+  border-radius: 16px;
+  text-align: center;
+  flex-shrink: 0;
+  user-select: none;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  cursor: default;
+
+  background: rgba(255, 255, 255, 0.75);
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+}
+body.theme-night .timeline-slot {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: none;
+}
+.timeline-slot:hover {
+  transform: translateY(-4px);
+  border-color: #38bdf8;
+  box-shadow: 0 10px 22px -5px rgba(56, 189, 248, 0.25);
+}
+body.theme-night .timeline-slot:hover {
+  background: rgba(255, 255, 255, 0.11);
+  box-shadow: 0 12px 25px -5px rgba(0, 0, 0, 0.5);
+}
+
+/* Current Hour Active Style */
+.timeline-slot.is-now {
+  background: linear-gradient(180deg, rgba(56, 189, 248, 0.16) 0%, rgba(99, 102, 241, 0.16) 100%);
+  border: 1.5px solid #38bdf8;
+  box-shadow: 0 0 16px rgba(56, 189, 248, 0.35);
+}
+.slot-now-pill {
+  position: absolute;
+  top: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: linear-gradient(135deg, #38bdf8, #6366f1);
+  color: #fff;
+  font-size: 0.58rem;
+  font-weight: 700;
+  padding: 0.1rem 0.45rem;
+  border-radius: 10px;
+  letter-spacing: 0.5px;
+  box-shadow: 0 2px 6px rgba(56, 189, 248, 0.4);
+}
+
+.slot-time {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--ink-soft);
+}
+.slot-icon {
+  font-size: 1.65rem;
+  margin: 0.35rem 0 0.2rem;
+  display: block;
+  line-height: 1;
+}
+.slot-desc {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--ink-soft);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 86px;
+  margin: 0.15rem auto 0.35rem;
+  line-height: 1.15;
+  text-transform: capitalize;
+}
+.slot-temp {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--ink);
+  line-height: 1.1;
+}
+.slot-metric {
+  font-size: 0.68rem;
+  font-family: var(--font-mono);
+  color: var(--ink-soft);
+  margin-top: 0.35rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+}
+.slot-metric.rain {
+  color: #0284c7;
+  font-weight: 600;
+}
+body.theme-night .slot-metric.rain {
+  color: #38bdf8;
+}
+
+/* Glowing Weather Icon Palettes */
+.tl-icon-sun {
+  color: #f59e0b;
+  filter: drop-shadow(0 0 8px rgba(245, 158, 11, 0.6));
+}
+.tl-icon-moon {
+  color: #818cf8;
+  filter: drop-shadow(0 0 8px rgba(129, 140, 248, 0.65));
+}
+.tl-icon-nightcloud {
+  color: #38bdf8;
+  filter: drop-shadow(0 0 8px rgba(56, 189, 248, 0.6));
+}
+.tl-icon-sunrain {
+  color: #38bdf8;
+  filter: drop-shadow(0 0 8px rgba(56, 189, 248, 0.55));
+}
+.tl-icon-rain {
+  color: #60a5fa;
+  filter: drop-shadow(0 0 8px rgba(96, 165, 250, 0.55));
+}
+.tl-icon-thunder {
+  color: #c084fc;
+  filter: drop-shadow(0 0 8px rgba(192, 132, 252, 0.65));
+}
+.tl-icon-snow {
+  color: #7dd3fc;
+  filter: drop-shadow(0 0 8px rgba(125, 211, 252, 0.6));
+}
+.tl-icon-cloud {
+  color: #94a3b8;
+  filter: drop-shadow(0 0 6px rgba(148, 163, 184, 0.45));
+}
+.tl-icon-mist {
+  color: #94a3b8;
+  filter: drop-shadow(0 0 6px rgba(148, 163, 184, 0.45));
+}
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-3">
   <div>
-    <a href="{% url 'planner:calendar_month' date.year date.month %}" class="text-muted-soft small"><i class="bi bi-arrow-left"></i> Back to {{ date|date:"F Y" }}</a>
-    <h1 class="h3 mt-1 mb-0">{{ date|date:"l, d F Y" }}</h1>
+    <a href="{% url 'planner:calendar_month' date.year date.month %}" class="back-pill-btn">
+      <i class="bi bi-arrow-left"></i>
+      <span>Back to {{ date|date:"F Y" }}</span>
+    </a>
+    <h1 class="h3 mt-2 mb-0">{{ date|date:"l, d F Y" }}</h1>
   </div>
   <a href="{% url 'planner:event_create' %}?date={{ date|date:'Y-m-d' }}" class="btn btn-sky-cta"><i class="bi bi-plus-lg"></i> Add to this day</a>
 </div>
 
 {% if day_timeline %}
-<div class="card p-3 mb-4 border-0 shadow-sm" style="background: linear-gradient(135deg, var(--surface-alt), rgba(255,255,255,0.05)); border-radius: 12px;">
-  <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
-    <div class="d-flex align-items-center gap-3">
-      <i class="bi bi-{% if day_timeline.condition == 'sunny' or day_timeline.condition == 'hot-summer' %}sun-fill{% elif day_timeline.condition == 'clear-night' or day_timeline.condition == 'hot-summer-night' %}moon-stars-fill{% elif day_timeline.condition == 'sun-rain-mix' %}cloud-sun-fill{% elif day_timeline.condition == 'rainy' %}cloud-rain-fill{% elif day_timeline.condition == 'snowy' %}snow{% elif day_timeline.condition == 'thunderstorm' %}cloud-lightning-rain-fill{% elif day_timeline.condition == 'misty' %}cloud-haze2-fill{% else %}cloud-fill{% endif %}" style="font-size: 2.2rem; color: var(--accent-ink);"></i>
+<div class="timeline-card">
+  <!-- Card Header -->
+  <div class="timeline-header">
+    <div class="timeline-hero">
+      <div class="timeline-hero-icon">
+        {% if day_timeline.condition == 'sunny' or day_timeline.condition == 'hot-summer' %}
+          <i class="bi bi-sun-fill tl-icon-sun"></i>
+        {% elif day_timeline.condition == 'clear-night' or day_timeline.condition == 'hot-summer-night' %}
+          <i class="bi bi-moon-stars-fill tl-icon-moon"></i>
+        {% elif day_timeline.condition == 'sun-rain-mix' %}
+          <i class="bi bi-cloud-sun-fill tl-icon-sunrain"></i>
+        {% elif day_timeline.condition == 'rainy' %}
+          <i class="bi bi-cloud-rain-fill tl-icon-rain"></i>
+        {% elif day_timeline.condition == 'snowy' %}
+          <i class="bi bi-snow tl-icon-snow"></i>
+        {% elif day_timeline.condition == 'thunderstorm' %}
+          <i class="bi bi-cloud-lightning-rain-fill tl-icon-thunder"></i>
+        {% elif day_timeline.condition == 'misty' %}
+          <i class="bi bi-cloud-haze2-fill tl-icon-mist"></i>
+        {% else %}
+          <i class="bi bi-cloud-fill tl-icon-cloud"></i>
+        {% endif %}
+      </div>
       <div>
-        <div class="fw-semibold" style="font-size: 1.1rem;">Weather in {{ city }}</div>
-        <div class="text-muted-soft small"><strong>{{ day_timeline.temp_avg }}&deg;C</strong> ({{ day_timeline.temp_min }}&deg; &ndash; {{ day_timeline.temp_max }}&deg;) &middot; {{ day_timeline.description }}</div>
+        <div class="timeline-title"><i class="bi bi-geo-alt-fill text-primary me-1" style="font-size:0.95rem;"></i>Weather in {{ city }}</div>
+        <div class="timeline-subtitle">
+          <strong class="text-primary">{{ day_timeline.temp_avg }}&deg;C</strong>
+          <span class="mx-1">&middot;</span>
+          <span>({{ day_timeline.temp_min }}&deg; &ndash; {{ day_timeline.temp_max }}&deg; range)</span>
+          <span class="mx-1">&middot;</span>
+          <span>{{ day_timeline.description }}</span>
+        </div>
       </div>
     </div>
-    {% if day_timeline.is_past %}
-    <span class="badge bg-secondary font-mono px-2 py-1"><i class="bi bi-archive"></i> Past Historical Weather</span>
-    {% elif day_timeline.is_today %}
-    <span class="badge bg-success font-mono px-2 py-1"><i class="bi bi-brightness-high"></i> Today's Live Weather</span>
-    {% else %}
-    <span class="badge bg-info text-dark font-mono px-2 py-1"><i class="bi bi-calendar-event"></i> Forecast Prediction</span>
-    {% endif %}
+
+    <!-- Badges & Navigation Arrows -->
+    <div class="timeline-actions">
+      {% if day_timeline.is_past %}
+      <span class="timeline-badge past"><i class="bi bi-clock-history"></i> Historical Weather</span>
+      {% elif day_timeline.is_today %}
+      <span class="timeline-badge live"><i class="bi bi-circle-fill" style="font-size:0.5rem;"></i> Live Today</span>
+      {% else %}
+      <span class="timeline-badge forecast"><i class="bi bi-stars"></i> Forecast Prediction</span>
+      {% endif %}
+
+      <div class="timeline-nav-arrows">
+        <button type="button" class="timeline-arrow-btn" id="tlPrevBtn" title="Scroll left" aria-label="Scroll left">
+          <i class="bi bi-chevron-left"></i>
+        </button>
+        <button type="button" class="timeline-arrow-btn" id="tlNextBtn" title="Scroll right" aria-label="Scroll right">
+          <i class="bi bi-chevron-right"></i>
+        </button>
+      </div>
+    </div>
   </div>
 
-  <div class="d-flex gap-2 overflow-auto pt-2 pb-1" style="scrollbar-width: thin;">
-    {% for slot in day_timeline.timeline %}
-    <div class="text-center p-2 rounded" style="min-width: 80px; background: rgba(0,0,0,0.03);">
-      <div class="font-mono small text-muted-soft" style="font-size: 0.75rem;">{{ slot.time }}</div>
-      <i class="bi bi-{% if slot.condition == 'sunny' or slot.condition == 'hot-summer' %}sun-fill{% elif slot.condition == 'clear-night' or slot.condition == 'hot-summer-night' %}moon-stars-fill{% elif slot.condition == 'sun-rain-mix' %}cloud-sun-fill{% elif slot.condition == 'rainy' %}cloud-rain-fill{% elif slot.condition == 'snowy' %}snow{% elif slot.condition == 'thunderstorm' %}cloud-lightning-rain-fill{% elif slot.condition == 'misty' %}cloud-haze2-fill{% else %}cloud-fill{% endif %}" style="font-size: 1.2rem; color: var(--accent-ink); margin: 0.2rem 0; display: block;"></i>
-      <div class="fw-bold small">{{ slot.temp }}&deg;C</div>
-      <div class="small text-muted-soft font-mono" style="font-size: 0.7rem;"><i class="bi bi-wind"></i> {{ slot.wind_speed }}</div>
+  <!-- 24-Hour Scroll Strip -->
+  <div class="timeline-strip-wrap">
+    <div class="timeline-strip" id="hourlyTimelineStrip">
+      {% for slot in day_timeline.timeline %}
+      <div class="timeline-slot {% if slot.is_current_hour %}is-now{% endif %}" title="{{ slot.time }}: {{ slot.description }} &middot; {{ slot.temp }}°C (feels like {{ slot.feels_like }}°C)">
+        {% if slot.is_current_hour %}
+        <span class="slot-now-pill">NOW</span>
+        {% endif %}
+        <div class="slot-time">{{ slot.time }}</div>
+        <div class="slot-icon">
+          {% if slot.condition == 'sunny' or slot.condition == 'hot-summer' %}
+            <i class="bi bi-sun-fill tl-icon-sun"></i>
+          {% elif slot.condition == 'clear-night' or slot.condition == 'hot-summer-night' %}
+            {% if 'cloud' in slot.description|lower %}
+              <i class="bi bi-cloud-moon-fill tl-icon-nightcloud"></i>
+            {% else %}
+              <i class="bi bi-moon-stars-fill tl-icon-moon"></i>
+            {% endif %}
+          {% elif slot.condition == 'sun-rain-mix' %}
+            <i class="bi bi-cloud-sun-fill tl-icon-sunrain"></i>
+          {% elif slot.condition == 'rainy' %}
+            <i class="bi bi-cloud-rain-fill tl-icon-rain"></i>
+          {% elif slot.condition == 'snowy' %}
+            <i class="bi bi-snow tl-icon-snow"></i>
+          {% elif slot.condition == 'thunderstorm' %}
+            <i class="bi bi-cloud-lightning-rain-fill tl-icon-thunder"></i>
+          {% elif slot.condition == 'misty' %}
+            <i class="bi bi-cloud-haze2-fill tl-icon-mist"></i>
+          {% else %}
+            <i class="bi bi-cloud-fill tl-icon-cloud"></i>
+          {% endif %}
+        </div>
+        <div class="slot-desc" title="{{ slot.description }}">{{ slot.description }}</div>
+        <div class="slot-temp">{{ slot.temp }}&deg;C</div>
+        {% if slot.precip_prob > 0 %}
+        <div class="slot-metric rain" title="Precipitation chance"><i class="bi bi-droplet-fill"></i> {{ slot.precip_prob }}%</div>
+        {% else %}
+        <div class="slot-metric wind" title="Wind speed"><i class="bi bi-wind"></i> {{ slot.wind_speed }}</div>
+        {% endif %}
+      </div>
+      {% endfor %}
     </div>
-    {% endfor %}
   </div>
 </div>
 {% endif %}
@@ -74,7 +500,15 @@
       <span class="badge bg-light text-dark ms-1 font-mono" title="{{ e.weather_condition }}"><i class="bi bi-cloud-sun"></i> {{ e.weather_temp }}&deg;C &middot; {{ e.weather_condition }}</span>
       {% endif %}
       <div><strong>{{ e.title }}</strong>{% if e.time %} <span class="text-muted-soft font-mono small">{{ e.time|time:"g:i A" }}</span>{% endif %}</div>
-      {% if e.location %}<div class="text-muted-soft small"><i class="bi bi-geo-alt"></i> {{ e.location }}</div>{% endif %}
+      <div class="d-flex align-items-center gap-2 flex-wrap mt-1">
+        {% if e.venue_type %}
+        <span class="badge font-mono small text-capitalize" style="background:var(--surface-alt); color:var(--ink); border:1px solid var(--line);">
+          <i class="bi bi-{% if e.venue_type == 'stadium' %}trophy-fill{% elif e.venue_type == 'hotel' %}building{% elif e.venue_type == 'restaurant' %}cup-hot-fill{% elif e.venue_type == 'park' %}tree-fill{% elif e.venue_type == 'indoor' %}door-open-fill{% elif e.venue_type == 'outdoor' %}sun-fill{% elif e.venue_type == 'office' %}briefcase-fill{% elif e.venue_type == 'school' %}mortarboard-fill{% elif e.venue_type == 'home' %}house-door-fill{% elif e.venue_type == 'virtual' %}camera-video-fill{% else %}geo-alt-fill{% endif %} me-1 text-primary"></i>
+          {{ e.get_venue_type_display }}
+        </span>
+        {% endif %}
+        {% if e.location %}<span class="text-muted-soft small"><i class="bi bi-geo-alt"></i> {{ e.location }}</span>{% endif %}
+      </div>
       {% if e.description %}<p class="small mb-0 mt-1">{{ e.description }}</p>{% endif %}
     </div>
     <div class="d-flex gap-2">
@@ -89,8 +523,69 @@
 {% if not birthdays and not events %}
 <div class="empty-state">
   <i class="bi bi-calendar2-week"></i>
-  <p>Nothing on this day yet.</p>
-  <a href="{% url 'planner:event_create' %}?date={{ date|date:'Y-m-d' }}" class="btn btn-sky-cta">Add something</a>
+  <p class="mb-0">Nothing scheduled on this day yet.</p>
 </div>
 {% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+  'use strict';
+  const strip = document.getElementById('hourlyTimelineStrip');
+  const prevBtn = document.getElementById('tlPrevBtn');
+  const nextBtn = document.getElementById('tlNextBtn');
+
+  if (strip) {
+    if (prevBtn) {
+      prevBtn.addEventListener('click', () => {
+        strip.scrollBy({ left: -280, behavior: 'smooth' });
+      });
+    }
+    if (nextBtn) {
+      nextBtn.addEventListener('click', () => {
+        strip.scrollBy({ left: 280, behavior: 'smooth' });
+      });
+    }
+
+    // Auto-scroll to current hour if present
+    const nowSlot = strip.querySelector('.timeline-slot.is-now');
+    if (nowSlot) {
+      setTimeout(() => {
+        nowSlot.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+      }, 350);
+    }
+
+    // Mouse drag-to-scroll support for desktop
+    let isDown = false;
+    let startX = 0;
+    let scrollLeft = 0;
+
+    strip.addEventListener('mousedown', (e) => {
+      isDown = true;
+      strip.style.cursor = 'grabbing';
+      startX = e.pageX - strip.offsetLeft;
+      scrollLeft = strip.scrollLeft;
+    });
+
+    strip.addEventListener('mouseleave', () => {
+      isDown = false;
+      strip.style.cursor = '';
+    });
+
+    strip.addEventListener('mouseup', () => {
+      isDown = false;
+      strip.style.cursor = '';
+    });
+
+    strip.addEventListener('mousemove', (e) => {
+      if (!isDown) return;
+      e.preventDefault();
+      const x = e.pageX - strip.offsetLeft;
+      const walk = (x - startX) * 1.5;
+      strip.scrollLeft = scrollLeft - walk;
+    });
+  }
+})();
+</script>
 {% endblock %}

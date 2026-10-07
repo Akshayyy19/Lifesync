@@ -46,6 +46,28 @@ class Profile(models.Model):
         default='auto'              # Default to automatic theme switching
     )
 
+    # Selectable weather effect options allowing user to experience all weather animations
+    WEATHER_EFFECT_CHOICES = [
+        ('auto', 'Automatic (Live Local Weather)'),
+        ('sunny', '☀️ Sunny Day'),
+        ('hot-summer', '🔥 Hot Summer Day'),
+        ('sun-rain-mix', '🌦️ Sun & Rain Mix (Rainbow)'),
+        ('cloudy', '⛅ Cloudy Sky'),
+        ('rainy', '🌧️ Rainy Storm'),
+        ('thunderstorm', '⛈️ Thunderstorm & Lightning'),
+        ('snowy', '❄️ Snowy Winter'),
+        ('misty', '🌫️ Misty / Foggy'),
+        ('clear-night', '🌙 Clear Starlit Night'),
+        ('hot-summer-night', '🌌 Warm Summer Night'),
+    ]
+
+    weather_effect_override = models.CharField(
+        max_length=20,
+        choices=WEATHER_EFFECT_CHOICES,
+        default='auto',
+        help_text='Choose a sky weather effect to experience or leave on Automatic for live weather.'
+    )
+
     # Timestamp recording when this profile was initially created; set automatically upon creation
     created_at = models.DateTimeField(auto_now_add=True)
 

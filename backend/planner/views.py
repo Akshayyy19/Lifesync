@@ -100,9 +100,7 @@ def calendar_view(request, year=None, month=None, day=None):
 
     # Configure Monday as the first day of the week in Python's calendar
     pycalendar.setfirstweekday(pycalendar.MONDAY)
-
-    # Generate a matrix of weeks representing the month grid (days outside the month are marked 0)
-    month_grid = pycalendar.monthcalendar(year, month)
+    cal_obj = pycalendar.Calendar(firstweekday=pycalendar.MONDAY)
 
     # Query all events and reminders for this specific month belonging to the logged-in user
     events_qs = Event.objects.filter(
@@ -121,36 +119,31 @@ def calendar_view(request, year=None, month=None, day=None):
 
     # Construct the formatted weeks data structure to pass to the HTML template
     weeks = []
-    for week in month_grid:
+    for week_dates in cal_obj.monthdatescalendar(year, month):
         week_data = []
-        for d in week:
-            if d == 0:
-                # 0 indicates empty padding days belonging to previous or next month
-                week_data.append(None)
-            else:
-                # Construct date object for the day
-                day_date = date(year, month, d)
-                # Sort items on this day by scheduled time (all-day items placed first)
-                day_items = sorted(events_by_day.get(d, []), key=lambda e: e.time or min_time.min)
+        for day_date in week_dates:
+            is_other_month = (day_date.month != month)
+            d = day_date.day
+            day_items = sorted(events_by_day.get(d, []) if not is_other_month else [], key=lambda e: e.time or min_time.min)
 
-                # Find the first valid weather snapshot on this day, if available
-                weather_icon = None
-                weather_temp = None
-                for item in day_items:
-                    if item.weather_icon:
-                        weather_icon = item.weather_icon
-                        weather_temp = item.weather_temp
-                        break
-                        
-                # Append formatted dictionary representing this day cell in the calendar grid
-                week_data.append({
-                    'day': d,
-                    'date': day_date,
-                    'items': day_items,
-                    'is_today': day_date == today,
-                    'weather_icon': weather_icon,
-                    'weather_temp': weather_temp,
-                })
+            # Find the first valid weather snapshot on this day, if available
+            weather_icon = None
+            weather_temp = None
+            for item in day_items:
+                if item.weather_icon:
+                    weather_icon = item.weather_icon
+                    weather_temp = item.weather_temp
+                    break
+                    
+            week_data.append({
+                'day': d,
+                'date': day_date,
+                'items': day_items,
+                'is_today': day_date == today,
+                'other_month': is_other_month,
+                'weather_icon': weather_icon,
+                'weather_temp': weather_temp,
+            })
         weeks.append(week_data)
 
     # Calculate previous and next month/year pointers for calendar navigation arrows
@@ -464,5 +457,86 @@ def weather_api(request):
         if weather:
             return JsonResponse(weather)
         return JsonResponse({'error': 'Not found'}, status=404)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+# ------------------------------------------------------------------------------
+# API View: location_weather_api
+# Purpose: Geocodes a freeform location string then returns weather for that
+#          specific location on the given date. Optionally returns the hourly
+#          slot matching the event time for pin-point accuracy.
+# ------------------------------------------------------------------------------
+@login_required
+def location_weather_api(request):
+    """Returns JSON weather for a user-typed location string + date + optional time."""
+    location = request.GET.get('location', '').strip()
+    date_str = request.GET.get('date', '').strip()
+    time_str = request.GET.get('time', '').strip()  # HH:MM format, optional
+
+    if not location or not date_str:
+        return JsonResponse({'error': 'location and date are required'}, status=400)
+
+    try:
+        from weather.services import get_day_weather_timeline, _geocode_openmeteo
+
+        # Geocode the location text to verify it's a real place
+        geo = _geocode_openmeteo(location)
+        if not geo or geo.get('lat') is None:
+            return JsonResponse({'error': 'location_not_found'}, status=404)
+
+        # Fetch full hourly timeline for that geocoded location
+        timeline_data = get_day_weather_timeline(location, date_str)
+        if not timeline_data:
+            return JsonResponse({'error': 'weather_unavailable'}, status=404)
+
+        # If a specific time was given, find the closest matching hourly slot
+        hourly_slot = None
+        if time_str:
+            try:
+                target_hour = int(time_str.split(':')[0])
+                # Find the slot whose hour is closest to the event time
+                hourly_slot = min(
+                    timeline_data['timeline'],
+                    key=lambda s: abs(s['hour'] - target_hour)
+                )
+            except (ValueError, IndexError):
+                pass
+
+        # Build the response payload
+        daily = {
+            'city': geo['name'],
+            'country': geo['country'],
+            'date': timeline_data['date'],
+            'is_past': timeline_data['is_past'],
+            'is_today': timeline_data['is_today'],
+            'is_future': timeline_data['is_future'],
+            'temp': timeline_data['temp_avg'],
+            'temp_min': timeline_data['temp_min'],
+            'temp_max': timeline_data['temp_max'],
+            'description': timeline_data['description'],
+            'condition': timeline_data['condition'],
+            'icon': timeline_data['icon'],
+            'avg_humidity': timeline_data['avg_humidity'],
+            'avg_wind': timeline_data['avg_wind'],
+            'max_precip_prob': timeline_data['max_precip_prob'],
+        }
+
+        payload = {'daily': daily}
+        if hourly_slot:
+            payload['hourly'] = {
+                'time': hourly_slot['time'],
+                'hour': hourly_slot['hour'],
+                'temp': hourly_slot['temp'],
+                'feels_like': hourly_slot['feels_like'],
+                'description': hourly_slot['description'],
+                'condition': hourly_slot['condition'],
+                'icon': hourly_slot['icon'],
+                'precip_prob': hourly_slot['precip_prob'],
+                'humidity': hourly_slot['humidity'],
+                'wind_speed': hourly_slot['wind_speed'],
+            }
+        return JsonResponse(payload)
+
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)

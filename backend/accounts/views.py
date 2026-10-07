@@ -15,6 +15,11 @@ from django.contrib.auth.decorators import login_required
 # Import redirect (for URL redirection after form actions) and render (to render HTML templates)
 from django.shortcuts import redirect, render
 
+# Import JsonResponse and require_POST for async theme toggle
+import json
+from django.http import JsonResponse
+from django.views.decorators.http import require_POST
+
 # Import custom form classes for user profile editing and registration
 from .forms import ProfileForm, RegisterForm
 
@@ -84,3 +89,27 @@ def profile(request):
 
     # Render the profile template with the populated form
     return render(request, 'accounts/profile.html', {'form': form})
+
+
+# ------------------------------------------------------------------------------
+# View: toggle_theme
+# Purpose: Quick AJAX endpoint to update the user's theme preference.
+# ------------------------------------------------------------------------------
+@login_required
+@require_POST
+def toggle_theme(request):
+    """Saves user theme preference ('day', 'night', 'auto') asynchronously."""
+    try:
+        body = json.loads(request.body.decode('utf-8'))
+        theme = body.get('theme')
+    except Exception:
+        theme = request.POST.get('theme')
+
+    if theme in ('day', 'night', 'auto'):
+        profile_obj = request.user.profile
+        profile_obj.theme_preference = theme
+        profile_obj.save(update_fields=['theme_preference'])
+        return JsonResponse({'status': 'ok', 'theme_preference': theme})
+
+    return JsonResponse({'status': 'error', 'message': 'Invalid theme value.'}, status=400)
+

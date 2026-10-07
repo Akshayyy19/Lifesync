@@ -31,9 +31,12 @@
     if (pref === 'day') return false;   // Force Light Mode
     if (pref === 'night') return true;  // Force Dark Mode
     return !timelineIsDay;              // Auto follows timeline
-  }
+  }  function resolveCondition(timelineIsDay) {
+    const override = (document.body.dataset.weatherOverride || '').toLowerCase().trim();
+    if (override && override !== 'auto') {
+      return override;
+    }
 
-  function resolveCondition(timelineIsDay) {
     const raw = (document.body.dataset.weatherCondition || '').toLowerCase().trim();
     const known = [
       'hot-summer', 'sun-rain-mix', 'sunny', 'cloudy', 'rainy',
@@ -200,8 +203,11 @@
   function renderScene(scene, condition, timelineIsDay, isDarkMode) {
     scene.innerHTML = '';
 
-    // Render celestial body based on timeline
-    if (timelineIsDay) {
+    // Render celestial body based on timeline / condition
+    const forceNightSky = (condition === 'clear-night' || condition === 'hot-summer-night');
+    const effectiveIsDay = forceNightSky ? false : timelineIsDay;
+
+    if (effectiveIsDay) {
       if (condition === 'hot-summer') {
         buildHotSun(scene);
       } else {
@@ -216,11 +222,9 @@
     // Render weather condition overlay effects
     switch (condition) {
       case 'hot-summer':
-        // Handled inside buildHotSun if daytime; at night handled with warm moon + stars
         break;
 
       case 'hot-summer-night':
-        // Warm summer night: clear skies with ambient dust specks
         for (let p = 0; p < 12; p++) {
           scene.appendChild(el('sky-heat-particle', {
             left: rand(5, 95) + '%',
@@ -233,7 +237,6 @@
         break;
 
       case 'sun-rain-mix':
-        // Sun and rain mixed condition: sun + clouds + gentle rain + rainbow!
         buildClouds(scene, 3, isDarkMode);
         buildRain(scene, 35, true);
         buildRainbow(scene);
@@ -265,11 +268,29 @@
         break;
 
       default:
-        // Clear sky / sunny: light friendly clouds
         buildClouds(scene, 2, isDarkMode);
         break;
     }
   }
+
+  function updateThemeIcons(isDark) {
+    document.querySelectorAll('.sky-theme-toggle').forEach(btn => {
+      const icon = btn.querySelector('i');
+      if (!icon) return;
+      if (isDark) {
+        icon.className = 'bi bi-moon-stars-fill';
+        icon.style.color = '#7dd3fc';
+        icon.style.filter = 'drop-shadow(0 0 5px rgba(56,189,248,0.85))';
+        btn.setAttribute('title', 'Dark mode — click for light');
+      } else {
+        icon.className = 'bi bi-sun-fill';
+        icon.style.color = '#fbbf24';
+        icon.style.filter = 'drop-shadow(0 0 5px rgba(251,191,36,0.9))';
+        btn.setAttribute('title', 'Light mode — click for dark');
+      }
+    });
+  }
+  window.updateThemeIcons = updateThemeIcons;
 
   function applyTheme() {
     const timelineIsDay = isTimelineDay();
@@ -301,10 +322,106 @@
     if (scene) {
       renderScene(scene, condition, timelineIsDay, isDarkMode);
     }
+
+    // 5. Update theme toggle icons
+    updateThemeIcons(isDarkMode);
   }
 
-  document.addEventListener('DOMContentLoaded', applyTheme);
+  window.applyThemeScene = applyTheme;
 
-  // Periodic refresh every 3 minutes to handle timeline changes seamlessly
+  function getCookie(name) {
+    const v = `; ${document.cookie}`, p = v.split(`; ${name}=`);
+    return p.length === 2 ? p.pop().split(';').shift() : '';
+  }
+
+  function toggleThemeAction(e) {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    const isCurrentlyDark = document.body.classList.contains('theme-night') ||
+      document.documentElement.getAttribute('data-bs-theme') === 'dark';
+    const newPref = isCurrentlyDark ? 'day' : 'night';
+
+    try { localStorage.setItem('lifesync_theme_pref', newPref); } catch (_) {}
+    document.body.dataset.themePref = newPref;
+
+    applyTheme();
+
+    document.querySelectorAll('.sky-theme-toggle').forEach(btn => {
+      btn.classList.add('theme-toggle-spinning');
+      setTimeout(() => btn.classList.remove('theme-toggle-spinning'), 420);
+    });
+
+    const csrf = getCookie('csrftoken');
+    fetch('/accounts/toggle-theme/', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': csrf || '',
+      },
+      body: JSON.stringify({ theme: newPref }),
+    }).catch(() => {});
+  }
+
+  function initTheme() {
+    try {
+      const saved = localStorage.getItem('lifesync_theme_pref');
+      if (saved && (saved === 'day' || saved === 'night' || saved === 'auto')) {
+        document.body.dataset.themePref = saved;
+      }
+    } catch (_) {}
+
+    applyTheme();
+  }
+
+  // Document-level event delegation for theme toggles and weather experience buttons
+  document.addEventListener('click', function (e) {
+    const toggleBtn = e.target.closest('.sky-theme-toggle');
+    if (toggleBtn) {
+      toggleThemeAction(e);
+      return;
+    }
+
+    const demoBtn = e.target.closest('.wx-demo-btn');
+    if (demoBtn) {
+      e.preventDefault();
+      const effect = demoBtn.dataset.effect;
+      document.body.dataset.weatherOverride = effect;
+      const select = document.getElementById('weatherEffectSelect');
+      if (select) select.value = effect;
+      applyTheme();
+    }
+  });
+
+  // Live change listener for Weather Effect Dropdown in Profile Settings
+  document.addEventListener('change', function (e) {
+    if (e.target && e.target.id === 'weatherEffectSelect') {
+      document.body.dataset.weatherOverride = e.target.value;
+      applyTheme();
+    }
+  });
+
+  (function () {
+    const style = document.createElement('style');
+    style.textContent =
+      '@keyframes themeToggleSpin{' +
+        '0%{transform:scale(1) rotate(0deg);}' +
+        '45%{transform:scale(0.80) rotate(165deg);}' +
+        '100%{transform:scale(1) rotate(360deg);}' +
+      '}' +
+      '.theme-toggle-spinning{' +
+        'animation:themeToggleSpin 0.42s cubic-bezier(0.34,1.56,0.64,1) both !important;' +
+      '}';
+    document.head.appendChild(style);
+  })();
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initTheme);
+  } else {
+    initTheme();
+  }
+
   setInterval(applyTheme, 3 * 60 * 1000);
 })();

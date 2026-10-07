@@ -333,6 +333,43 @@ label, .form-label { font-weight: 600; font-family: var(--font-display); color: 
   100% { box-shadow: 0 0 0 0 rgba(236, 72, 153, 0); }
 }
 
+/* Minimalist Theme Toggle Button in Sky Navbar */
+.theme-toggle-btn {
+  background: rgba(255, 255, 255, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: #ffffff;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-radius: 50%;
+  width: 38px;
+  height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  margin: 0 4px;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  position: relative;
+  outline: none;
+}
+.theme-toggle-btn:hover {
+  transform: translateY(-2px) scale(1.08);
+  background: rgba(255, 255, 255, 0.28);
+  border-color: rgba(255, 255, 255, 0.55);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.22);
+}
+.theme-toggle-btn:active {
+  transform: scale(0.92);
+}
+.theme-toggle-btn i {
+  font-size: 1.15rem;
+  line-height: 1;
+  display: inline-block;
+  transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), color 0.25s ease;
+}
+
 .hero-band {
   position: relative;
   z-index: 2;
@@ -531,13 +568,14 @@ body.theme-night .weather-glance .temp { background: linear-gradient(135deg, #ff
 .calendar-table th { font-family: var(--font-display); font-size: 0.9rem; color: var(--ink-soft); font-weight: 700; text-transform: uppercase; padding: 1rem 0; border: none; text-align: center; }
 .calendar-table td {
   background: var(--surface); backdrop-filter: var(--glass-blur); border: 1px solid var(--line);
-  border-radius: var(--radius-sm); height: 120px; padding: 0.5rem;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: var(--radius-sm); height: 115px; max-height: 115px; padding: 0.4rem 0.5rem;
+  vertical-align: top; overflow: hidden;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 .calendar-table td.empty { background: transparent; border: none; }
 .calendar-table td.empty-fill {
   background: var(--surface); backdrop-filter: var(--glass-blur); border: 1px solid var(--line);
-  border-radius: var(--radius-sm); height: 120px; padding: 0.5rem;
+  border-radius: var(--radius-sm); height: 115px; max-height: 115px; padding: 0.4rem 0.5rem;
   opacity: 0.35;
 }
 .calendar-table td.other-month {
@@ -546,13 +584,35 @@ body.theme-night .weather-glance .temp { background: linear-gradient(135deg, #ff
 .calendar-table td.today { background: rgba(245, 158, 11, 0.1); border-color: var(--accent); box-shadow: 0 4px 15px rgba(245, 158, 11, 0.1); }
 .calendar-table td:hover:not(.empty) { transform: scale(1.02); box-shadow: 0 10px 25px rgba(0,0,0,0.1); z-index: 10; position: relative; background: var(--surface-solid); }
 
-.day-number { font-family: var(--font-display); font-weight: 700; font-size: 1.1rem; color: var(--ink-soft); }
-.today .day-number { background: linear-gradient(135deg, var(--accent), #f97316); color: #fff; border-radius: 50%; width: 28px; height: 28px; display: inline-flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(245, 158, 11, 0.4); }
+.day-number { font-family: var(--font-display); font-weight: 700; font-size: 1.05rem; color: var(--ink-soft); }
+.today .day-number { background: linear-gradient(135deg, var(--accent), #f97316); color: #fff; border-radius: 50%; width: 26px; height: 26px; display: inline-flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(245, 158, 11, 0.4); }
 
-.day-cell-link { display: block; text-decoration: none; color: inherit; height: 100%; }
+.day-cell-link { display: flex; flex-direction: column; text-decoration: none; color: inherit; height: 100%; overflow: hidden; }
+.day-items-container {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 2px;
+  margin-top: 2px;
+}
+.day-items-container::-webkit-scrollbar {
+  width: 3px;
+}
+.day-items-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+.day-items-container::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.4);
+  border-radius: 4px;
+}
+.day-items-container::-webkit-scrollbar-thumb:hover {
+  background: var(--accent);
+}
+
 .mini-chip {
-  display: block; font-size: 0.7rem; font-weight: 600; padding: 0.2rem 0.5rem;
-  border-radius: 6px; margin-top: 0.3rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  display: block; font-size: 0.68rem; font-weight: 600; padding: 0.15rem 0.45rem;
+  border-radius: 6px; margin-top: 0.25rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   background: rgba(0,0,0,0.05);
 }
 body.theme-night .mini-chip { background: rgba(255,255,255,0.1); }

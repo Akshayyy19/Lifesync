@@ -3,33 +3,94 @@
 
 {% block content %}
 <div class="row justify-content-center">
-  <div class="col-md-5">
-    <div class="card p-4 mt-4">
+  <div class="col-md-5 col-lg-4">
+    <div class="card p-3 p-md-4 mt-4 shadow-sm border-0" style="border-radius: var(--radius-md); backdrop-filter: var(--glass-blur); background: var(--surface);">
       <div class="card-body">
-        <h1 class="h3 mb-1">Welcome back</h1>
-        <p class="text-muted-soft mb-4">Log in to see today's plan.</p>
+        <div class="text-center mb-4">
+          <div class="d-inline-flex align-items-center justify-content-center bg-primary bg-opacity-10 text-primary rounded-circle mb-2" style="width: 56px; height: 56px;">
+            <i class="bi bi-person-lock fs-3"></i>
+          </div>
+          <h1 class="h3 mb-1">Welcome back</h1>
+          <p class="text-muted-soft mb-0 small">Sign in with your username or registered email.</p>
+        </div>
 
-        <form method="post">
+        {% if form.non_field_errors %}
+        <div class="alert alert-danger d-flex align-items-start gap-2 py-2 px-3 small mb-3" role="alert">
+          <i class="bi bi-exclamation-octagon-fill fs-5 flex-shrink-0 mt-1"></i>
+          <div>
+            {% for error in form.non_field_errors %}
+              <div>{{ error }}</div>
+            {% endfor %}
+          </div>
+        </div>
+        {% endif %}
+
+        <form method="post" novalidate>
           {% csrf_token %}
-          {% if form.non_field_errors %}
-          <div class="alert alert-danger">{{ form.non_field_errors }}</div>
-          {% endif %}
           <div class="mb-3">
-            <label class="form-label" for="{{ form.username.id_for_label }}">Username</label>
+            <label class="form-label small fw-semibold" for="{{ form.username.id_for_label }}">
+              <i class="bi bi-person me-1"></i> Username or Email
+            </label>
             {{ form.username }}
+            {% if form.username.errors %}
+            <div class="text-danger small mt-1">{{ form.username.errors.0 }}</div>
+            {% endif %}
           </div>
+
           <div class="mb-3">
-            <label class="form-label" for="{{ form.password.id_for_label }}">Password</label>
-            {{ form.password }}
+            <div class="d-flex justify-content-between align-items-center">
+              <label class="form-label small fw-semibold mb-1" for="{{ form.password.id_for_label }}">
+                <i class="bi bi-key me-1"></i> Password
+              </label>
+              <a href="{% url 'accounts:password_reset' %}" class="small text-decoration-none">
+                Forgot password?
+              </a>
+            </div>
+            <div class="input-group">
+              {{ form.password }}
+              <button class="btn btn-outline-secondary" type="button" id="togglePasswordBtn" title="Show/Hide Password" style="border-radius: 0 var(--radius-sm) var(--radius-sm) 0;">
+                <i class="bi bi-eye" id="togglePasswordIcon"></i>
+              </button>
+            </div>
+            {% if form.password.errors %}
+            <div class="text-danger small mt-1">{{ form.password.errors.0 }}</div>
+            {% endif %}
           </div>
-          <button type="submit" class="btn btn-sky-cta w-100">Log in</button>
+
+          <div class="d-flex justify-content-end mb-3">
+            <a href="{% url 'accounts:forgot_username' %}" class="small text-muted-soft text-decoration-none">
+              <i class="bi bi-question-circle me-1"></i> Forgot username?
+            </a>
+          </div>
+
+          <button type="submit" class="btn btn-sky-cta w-100 py-2">
+            <i class="bi bi-box-arrow-in-right me-1"></i> Log in
+          </button>
         </form>
 
-        <p class="text-center text-muted-soft small mt-4 mb-0">
-          New to LifeSync? <a href="{% url 'accounts:register' %}">Create an account</a>
+        <hr class="my-4 opacity-25">
+
+        <p class="text-center text-muted-soft small mb-0">
+          New to LifeSync? <a href="{% url 'accounts:register' %}" class="fw-semibold">Create an account</a>
         </p>
       </div>
     </div>
   </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const toggleBtn = document.getElementById('togglePasswordBtn');
+  const passInput = document.getElementById('passwordInput') || document.querySelector('input[type="password"]');
+  const icon = document.getElementById('togglePasswordIcon');
+
+  if (toggleBtn && passInput) {
+    toggleBtn.addEventListener('click', function() {
+      const isPassword = passInput.getAttribute('type') === 'password';
+      passInput.setAttribute('type', isPassword ? 'text' : 'password');
+      icon.className = isPassword ? 'bi bi-eye-slash' : 'bi bi-eye';
+    });
+  }
+});
+</script>
 {% endblock %}

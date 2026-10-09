@@ -68,10 +68,61 @@ class Profile(models.Model):
         help_text='Choose a sky weather effect to experience or leave on Automatic for live weather.'
     )
 
+    # Admin approval and traffic control
+    is_approved = models.BooleanField(
+        default=True,
+        help_text='Whether this user account is approved by admin to access LifeSync.'
+    )
+    is_restricted = models.BooleanField(
+        default=False,
+        help_text='Whether this user account is restricted/suspended by an administrator.'
+    )
+    restriction_reason = models.TextField(
+        blank=True,
+        default='',
+        help_text='Admin note/reason explaining why the user was restricted.'
+    )
+    approved_at = models.DateTimeField(null=True, blank=True)
+    approved_by = models.ForeignKey(
+        User,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name='approved_profiles'
+    )
+
     # Timestamp recording when this profile was initially created; set automatically upon creation
     created_at = models.DateTimeField(auto_now_add=True)
+
+    @property
+    def status(self):
+        """Returns the primary account status: 'restricted', 'pending', or 'active'."""
+        if self.is_restricted:
+            return 'restricted'
+        if not self.is_approved:
+            return 'pending'
+        return 'active'
+
+    @property
+    def status_label(self):
+        """Human-readable account status badge label."""
+        if self.is_restricted:
+            return 'Restricted'
+        if not self.is_approved:
+            return 'Pending Approval'
+        return 'Active'
+
+    @property
+    def status_badge_class(self):
+        """Bootstrap badge styling for UI display."""
+        if self.is_restricted:
+            return 'badge bg-danger'
+        if not self.is_approved:
+            return 'badge bg-warning text-dark'
+        return 'badge bg-success'
 
     # String representation method for developer readability in Django shell and Admin dashboard
     def __str__(self):
         # Returns e.g. "john_doe's profile"
         return f"{self.user.username}'s profile"
+

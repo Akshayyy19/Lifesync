@@ -1,93 +1,369 @@
 # ==============================================================================
 # File: accounts/views.py
-# Description: Handles user registration and profile management views.
+# Description: Handles user authentication, registration, password recovery,
+#              profile settings, and admin user traffic control.
 # ==============================================================================
 
-# Import Django's messages framework to display one-time feedback alerts (success, error) to users
-from django.contrib import messages
-
-# Import Django's login function to establish a session for newly registered users
-from django.contrib.auth import login
-
-# Import login_required decorator to ensure views can only be viewed by authenticated users
-from django.contrib.auth.decorators import login_required
-
-# Import redirect (for URL redirection after form actions) and render (to render HTML templates)
-from django.shortcuts import redirect, render
-
-# Import JsonResponse and require_POST for async theme toggle
 import json
-from django.http import JsonResponse
+from django.conf import settings
+from django.contrib import messages
+from django.contrib.auth import login, logout
+from django.contrib.auth import views as auth_views
+from django.contrib.auth.decorators import login_required, user_passes_test
+from django.contrib.auth.models import User
+from django.contrib.auth.tokens import default_token_generator
+from django.db.models import Count, Q
+from django.http import HttpResponseForbidden, JsonResponse
+from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse_lazy
+from django.utils import timezone
+from django.utils.http import urlsafe_base64_encode
 from django.views.decorators.http import require_POST
 
-# Import custom form classes for user profile editing and registration
-from .forms import ProfileForm, RegisterForm
+from notifications.models import Notification
+from .forms import (
+    CustomPasswordResetForm,
+    ForgotUsernameForm,
+    LoginForm,
+    ProfileForm,
+    RegisterForm,
+)
+from .models import Profile
 
 
 # ------------------------------------------------------------------------------
 # View: register
-# Purpose: Handles new user registration via GET (display form) and POST (submit data).
+# Purpose: Handles new user registration with admin approval workflow.
 # ------------------------------------------------------------------------------
 def register(request):
-    # If the user is already logged in, they don't need to register; redirect to dashboard
     if request.user.is_authenticated:
         return redirect('core:dashboard')
 
-    # Check if the HTTP request is submitting form data (POST)
     if request.method == 'POST':
-        # Instantiate the registration form bound with the submitted POST data
         form = RegisterForm(request.POST)
-
-        # Validate form inputs (e.g. check username availability, password rules and confirmation)
         if form.is_valid():
-            # Save the new user instance to the database
             user = form.save()
+            profile = user.profile
+            approval_required = getattr(settings, 'ACCOUNT_APPROVAL_REQUIRED', True)
 
-            # Log the user into the current session immediately after registration
-            login(request, user)
+            # Notify all staff members about the new registration
+            today = timezone.localdate()
+            admin_users = User.objects.filter(is_staff=True)
+            for admin_u in admin_users:
+                Notification.objects.create(
+                    user=admin_u,
+                    notif_type='system',
+                    message=f"New user registration: @{user.username} ({user.email}) is awaiting review.",
+                    for_date=today,
+                )
 
-            # Flash a welcoming success message to be displayed on the next page
-            messages.success(request, f'Welcome to LifeSync, {user.username}! Your account is ready.')
-
-            # Redirect user directly to their personal dashboard
-            return redirect('core:dashboard')
+            # If approval is required and account is not auto-approved
+            if approval_required and not profile.is_approved:
+                messages.info(
+                    request,
+                    f"Welcome, {user.username}! Your account was created and is currently pending administrator approval.",
+                )
+                return redirect('accounts:pending_approval', username=user.username)
+            else:
+                login(request, user, backend='accounts.backends.EmailOrUsernameBackend')
+                messages.success(
+                    request,
+                    f"Welcome to LifeSync, {user.username}! Your account is ready.",
+                )
+                return redirect('core:dashboard')
     else:
-        # If the request method is GET, instantiate an empty, unbound registration form
         form = RegisterForm()
 
-    # Render registration page template, passing the form object into the context
     return render(request, 'accounts/register.html', {'form': form})
+
+
+# ------------------------------------------------------------------------------
+# View: pending_approval
+# Purpose: Informational waiting screen for newly registered unapproved users.
+# ------------------------------------------------------------------------------
+def pending_approval(request, username):
+    user_obj = User.objects.filter(username=username).first()
+    is_approved = False
+    if user_obj and hasattr(user_obj, 'profile'):
+        is_approved = user_obj.profile.is_approved
+
+    return render(
+        request,
+        'accounts/pending_approval.html',
+        {
+            'pending_username': username,
+            'user_obj': user_obj,
+            'is_approved': is_approved,
+        },
+    )
+
+
+# ------------------------------------------------------------------------------
+# View: forgot_username
+# Purpose: Allows users to retrieve their forgotten username using their email.
+# ------------------------------------------------------------------------------
+def forgot_username(request):
+    found_users = None
+    searched_email = None
+
+    if request.method == 'POST':
+        form = ForgotUsernameForm(request.POST)
+        if form.is_valid():
+            searched_email = form.cleaned_data['email'].strip()
+            found_users = list(User.objects.filter(email__iexact=searched_email))
+            if not found_users:
+                messages.error(
+                    request,
+                    f"No LifeSync account was found associated with '{searched_email}'.",
+                )
+    else:
+        form = ForgotUsernameForm()
+
+    return render(
+        request,
+        'accounts/forgot_username.html',
+        {
+            'form': form,
+            'found_users': found_users,
+            'searched_email': searched_email,
+        },
+    )
+
+
+# ------------------------------------------------------------------------------
+# View: CustomPasswordResetView
+# Purpose: Initiates password reset via username or email with dev helper support.
+# ------------------------------------------------------------------------------
+class CustomPasswordResetView(auth_views.PasswordResetView):
+    template_name = 'accounts/password_reset.html'
+    email_template_name = 'accounts/password_reset_email.html'
+    subject_template_name = 'accounts/password_reset_subject.txt'
+    form_class = CustomPasswordResetForm
+    success_url = reverse_lazy('accounts:password_reset_done')
+
+    def form_valid(self, form):
+        # In debug mode, capture the reset link into session for immediate testing
+        if settings.DEBUG:
+            email_or_user = form.cleaned_data.get('email')
+            user = (
+                User.objects.filter(
+                    Q(email__iexact=email_or_user) | Q(username__iexact=email_or_user)
+                )
+                .filter(is_active=True)
+                .first()
+            )
+            if user:
+                token = default_token_generator.make_token(user)
+                uid = urlsafe_base64_encode(str(user.pk).encode('utf-8'))
+                self.request.session['dev_reset_uid'] = uid
+                self.request.session['dev_reset_token'] = token
+                self.request.session['dev_reset_username'] = user.username
+        return super().form_valid(form)
+
+
+# ------------------------------------------------------------------------------
+# View: CustomPasswordResetDoneView
+# Purpose: Notifies user that reset instructions have been dispatched.
+# ------------------------------------------------------------------------------
+class CustomPasswordResetDoneView(auth_views.PasswordResetDoneView):
+    template_name = 'accounts/password_reset_done.html'
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        if settings.DEBUG and 'dev_reset_token' in self.request.session:
+            ctx['dev_uid'] = self.request.session.get('dev_reset_uid')
+            ctx['dev_token'] = self.request.session.get('dev_reset_token')
+            ctx['dev_username'] = self.request.session.get('dev_reset_username')
+        return ctx
+
+
+# ------------------------------------------------------------------------------
+# View: admin_users (User Traffic & Access Control Dashboard)
+# Purpose: Gives admins complete control over user approvals, restrictions & traffic.
+# ------------------------------------------------------------------------------
+@login_required
+@user_passes_test(lambda u: u.is_staff or u.is_superuser)
+def admin_users(request):
+    status_filter = request.GET.get('status', 'all').lower()
+    search_query = request.GET.get('q', '').strip()
+
+    # Base queryset with related profile and activity annotations
+    users_qs = User.objects.select_related('profile').prefetch_related(
+        'events', 'diary_entries'
+    ).order_by('-date_joined')
+
+    # Apply search filter
+    if search_query:
+        users_qs = users_qs.filter(
+            Q(username__icontains=search_query)
+            | Q(email__icontains=search_query)
+            | Q(first_name__icontains=search_query)
+            | Q(last_name__icontains=search_query)
+            | Q(profile__city__icontains=search_query)
+        )
+
+    # Compute aggregate traffic and user status metrics
+    total_count = User.objects.count()
+    pending_count = Profile.objects.filter(is_approved=False).count()
+    active_count = Profile.objects.filter(is_approved=True, is_restricted=False).count()
+    restricted_count = Profile.objects.filter(is_restricted=True).count()
+    staff_count = User.objects.filter(is_staff=True).count()
+
+    # Apply status tabs
+    if status_filter == 'pending':
+        users_qs = users_qs.filter(profile__is_approved=False)
+    elif status_filter == 'active':
+        users_qs = users_qs.filter(profile__is_approved=True, profile__is_restricted=False)
+    elif status_filter == 'restricted':
+        users_qs = users_qs.filter(profile__is_restricted=True)
+    elif status_filter == 'staff':
+        users_qs = users_qs.filter(is_staff=True)
+
+    # Attach event and diary counts for traffic monitoring
+    user_list = []
+    for u in users_qs:
+        event_count = u.events.count()
+        diary_count = u.diary_entries.count()
+        user_list.append({
+            'user': u,
+            'profile': getattr(u, 'profile', None),
+            'event_count': event_count,
+            'diary_count': diary_count,
+        })
+
+    context = {
+        'user_list': user_list,
+        'status_filter': status_filter,
+        'search_query': search_query,
+        'total_count': total_count,
+        'pending_count': pending_count,
+        'active_count': active_count,
+        'restricted_count': restricted_count,
+        'staff_count': staff_count,
+    }
+    return render(request, 'accounts/admin_users.html', context)
+
+
+# ------------------------------------------------------------------------------
+# View: admin_user_action
+# Purpose: Executes user acceptance, restriction, unrestriction, role toggle, or deletion.
+# ------------------------------------------------------------------------------
+@login_required
+@user_passes_test(lambda u: u.is_staff or u.is_superuser)
+@require_POST
+def admin_user_action(request, user_id):
+    target_user = get_object_or_404(User, pk=user_id)
+    profile = getattr(target_user, 'profile', None)
+    if not profile:
+        profile = Profile.objects.create(user=target_user)
+
+    action = request.POST.get('action')
+
+    # Action 1: Accept / Approve user
+    if action == 'approve':
+        profile.is_approved = True
+        profile.is_restricted = False
+        profile.approved_at = timezone.now()
+        profile.approved_by = request.user
+        profile.save()
+
+        # Send in-app notification to approved user
+        Notification.objects.create(
+            user=target_user,
+            notif_type='system',
+            message="🎉 Welcome to LifeSync! Your account has been accepted and approved by the administrator.",
+            for_date=timezone.localdate(),
+        )
+
+        messages.success(
+            request, f"User @{target_user.username} has been approved and granted access."
+        )
+
+    # Action 2: Restrict / Suspend user
+    elif action == 'restrict':
+        if target_user == request.user:
+            messages.error(request, "You cannot restrict your own account.")
+            return redirect('accounts:admin_users')
+
+        if target_user.is_superuser and not request.user.is_superuser:
+            messages.error(request, "Only a superuser can restrict another superuser.")
+            return redirect('accounts:admin_users')
+
+        reason = request.POST.get('reason', '').strip() or "Restricted by administrator."
+        profile.is_restricted = True
+        profile.restriction_reason = reason
+        profile.save()
+
+        messages.warning(
+            request, f"User @{target_user.username} has been restricted. Reason: {reason}"
+        )
+
+    # Action 3: Unrestrict / Reactivate user
+    elif action == 'unrestrict':
+        profile.is_restricted = False
+        profile.restriction_reason = ''
+        profile.is_approved = True
+        profile.save()
+
+        messages.success(
+            request, f"Restriction lifted. User @{target_user.username} is now active."
+        )
+
+    # Action 4: Delete user
+    elif action == 'delete':
+        if target_user == request.user:
+            messages.error(request, "Security check: You cannot delete your own account.")
+            return redirect('accounts:admin_users')
+
+        if target_user.is_superuser and not request.user.is_superuser:
+            messages.error(
+                request, "Permission denied: Only a superuser can delete a superuser account."
+            )
+            return redirect('accounts:admin_users')
+
+        deleted_username = target_user.username
+        target_user.delete()
+        messages.success(
+            request, f"User @{deleted_username} and all associated data have been permanently deleted."
+        )
+
+    # Action 5: Toggle Admin / Staff privilege
+    elif action == 'toggle_staff':
+        if not request.user.is_superuser:
+            messages.error(request, "Only superusers can grant or revoke admin staff privileges.")
+            return redirect('accounts:admin_users')
+
+        if target_user == request.user:
+            messages.error(request, "You cannot modify your own staff privileges.")
+            return redirect('accounts:admin_users')
+
+        target_user.is_staff = not target_user.is_staff
+        target_user.save()
+        status_text = "Staff Admin" if target_user.is_staff else "Regular Member"
+        messages.info(
+            request, f"Role updated: @{target_user.username} is now a {status_text}."
+        )
+
+    return redirect('accounts:admin_users')
 
 
 # ------------------------------------------------------------------------------
 # View: profile
 # Purpose: Allows logged-in users to update their profile settings (city, theme).
 # ------------------------------------------------------------------------------
-@login_required  # Restrict access so only authenticated users can edit profile settings
+@login_required
 def profile(request):
-    # Retrieve the Profile instance associated with the currently logged-in user
     profile_obj = request.user.profile
 
-    # Check if the user is submitting updated profile data
     if request.method == 'POST':
-        # Bind the submitted POST data to the existing Profile model instance
         form = ProfileForm(request.POST, instance=profile_obj)
-
-        # Check if the submitted data meets all model validation constraints
         if form.is_valid():
-            # Save updated fields (e.g. city, theme_preference) to the database
             form.save()
-
-            # Display a success alert confirming the changes have been saved
             messages.success(request, 'Your profile has been updated.')
-
-            # Redirect back to profile page to avoid duplicate form submission on page refresh
             return redirect('accounts:profile')
     else:
-        # For GET requests, pre-populate the form with the current user's saved profile values
         form = ProfileForm(instance=profile_obj)
 
-    # Render the profile template with the populated form
     return render(request, 'accounts/profile.html', {'form': form})
 
 
@@ -98,7 +374,6 @@ def profile(request):
 @login_required
 @require_POST
 def toggle_theme(request):
-    """Saves user theme preference ('day', 'night', 'auto') asynchronously."""
     try:
         body = json.loads(request.body.decode('utf-8'))
         theme = body.get('theme')
@@ -113,3 +388,17 @@ def toggle_theme(request):
 
     return JsonResponse({'status': 'error', 'message': 'Invalid theme value.'}, status=400)
 
+
+# ------------------------------------------------------------------------------
+# View: logout_view
+# Purpose: Logs out the user and redirects to login page with feedback.
+#          Accepts both GET and POST requests for seamless exit from admin and navbar.
+# ------------------------------------------------------------------------------
+def logout_view(request):
+    if request.user.is_authenticated:
+        username = request.user.username
+        logout(request)
+        messages.info(request, f"You have been safely logged out, @{username}.")
+    else:
+        logout(request)
+    return redirect('accounts:login')

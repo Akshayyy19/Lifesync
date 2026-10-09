@@ -653,3 +653,232 @@ body.theme-night .weather-hero .big-temp { background: linear-gradient(135deg, #
 .forecast-day:hover { transform: translateY(-10px); box-shadow: 0 15px 30px rgba(0,0,0,0.1); background: var(--surface-solid); }
 
 .sky-footer { margin-top: 4rem; padding: 2rem 0; font-family: var(--font-display); font-weight: 500; opacity: 0.8; }
+
+/* ==========================================================================
+   Admin User Traffic & Tables (Dark & Light Mode Optimization)
+   ========================================================================== */
+
+/* Table Glassmorphism & Theme Integration */
+.admin-table {
+  color: var(--ink);
+  background: transparent !important;
+  --bs-table-bg: transparent;
+  --bs-table-color: var(--ink);
+  --bs-table-hover-bg: rgba(255, 255, 255, 0.04);
+  --bs-table-hover-color: var(--ink);
+}
+
+.admin-table thead,
+.admin-table thead tr,
+.admin-table thead th {
+  background-color: #f1f5f9 !important;
+  color: #475569 !important;
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.74rem;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid #e2e8f0 !important;
+  padding-top: 0.95rem;
+  padding-bottom: 0.95rem;
+}
+
+body.theme-night .admin-table thead,
+body.theme-night .admin-table thead tr,
+body.theme-night .admin-table thead th,
+[data-bs-theme="dark"] .admin-table thead,
+[data-bs-theme="dark"] .admin-table thead tr,
+[data-bs-theme="dark"] .admin-table thead th {
+  background-color: #182234 !important;
+  color: #94a3b8 !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+
+.admin-table tbody tr {
+  border-bottom: 1px solid var(--line);
+  transition: background 0.2s ease;
+}
+
+body.theme-night .admin-table tbody tr {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.admin-table tbody tr:hover {
+  background: rgba(255, 255, 255, 0.035) !important;
+}
+
+.admin-table tbody tr:last-child {
+  border-bottom: none;
+}
+
+.admin-table tbody td {
+  color: var(--ink);
+  background: transparent !important;
+  border: none;
+}
+
+/* Platform Activity Badges */
+.activity-badge {
+  background: var(--surface-alt);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  font-weight: 500;
+  font-size: 0.775rem;
+  padding: 0.28rem 0.65rem;
+  border-radius: var(--radius-sm);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  transition: all 0.2s ease;
+}
+
+body.theme-night .activity-badge {
+  background: rgba(30, 41, 59, 0.75);
+  color: #e2e8f0;
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+.activity-badge:hover {
+  border-color: var(--accent);
+  transform: translateY(-1px);
+}
+
+/* Filter Nav Count Badges */
+.filter-count-badge {
+  background: rgba(0, 0, 0, 0.08);
+  color: var(--ink);
+  border-radius: 999px;
+  padding: 0.15rem 0.5rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  display: inline-block;
+  line-height: 1.2;
+}
+
+body.theme-night .filter-count-badge {
+  background: rgba(255, 255, 255, 0.14);
+  color: #f1f5f9;
+}
+
+.nav-pills .nav-link.active .filter-count-badge {
+  background: rgba(255, 255, 255, 0.28);
+  color: #ffffff;
+}
+
+/* Modals Theme Styling */
+.modal-content {
+  background: var(--surface-solid);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.5);
+  backdrop-filter: var(--glass-blur);
+}
+
+body.theme-night .modal-content {
+  background: #0f172a;
+  border-color: rgba(255, 255, 255, 0.12);
+  color: #f8fafc;
+}
+
+/* Search Capsule (Icon, placeholder, and search button all enclosed inside) */
+.search-capsule {
+  display: flex;
+  align-items: center;
+  position: relative;
+  width: 100%;
+  background: rgba(15, 23, 42, 0.65);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 50px;
+  padding: 4px 5px 4px 16px;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  transition: all 0.25s ease;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+body:not(.theme-night) .search-capsule {
+  background: #ffffff;
+  border-color: rgba(0, 0, 0, 0.15);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.search-capsule:focus-within {
+  border-color: #f59e0b;
+  background: rgba(15, 23, 42, 0.9);
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.25), inset 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+body:not(.theme-night) .search-capsule:focus-within {
+  background: #ffffff;
+}
+
+.search-capsule-icon {
+  color: #94a3b8;
+  font-size: 0.95rem;
+  margin-right: 10px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+}
+
+.search-capsule-input {
+  flex: 1;
+  background: transparent !important;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  color: var(--ink) !important;
+  font-size: 0.86rem;
+  padding: 6px 0 !important;
+  min-width: 0;
+  line-height: 1.5;
+}
+
+.search-capsule-input::placeholder {
+  color: #94a3b8 !important;
+  opacity: 0.85;
+}
+
+.search-capsule-clear {
+  color: #94a3b8;
+  margin-right: 8px;
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.search-capsule-clear:hover {
+  color: #ef4444;
+}
+
+.search-capsule-btn {
+  background: linear-gradient(135deg, #f59e0b, #ea580c) !important;
+  color: #ffffff !important;
+  border: none !important;
+  border-radius: 50px !important;
+  padding: 6px 18px !important;
+  font-size: 0.825rem !important;
+  font-weight: 600 !important;
+  cursor: pointer;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.35);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.search-capsule-btn:hover {
+  transform: translateY(-1px) scale(1.02);
+  box-shadow: 0 5px 15px rgba(245, 158, 11, 0.55);
+  background: linear-gradient(135deg, #ea580c, #f59e0b) !important;
+}
+
+.search-capsule-btn:active {
+  transform: translateY(0) scale(0.98);
+}
+
+

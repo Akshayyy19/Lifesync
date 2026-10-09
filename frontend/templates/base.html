@@ -91,6 +91,16 @@
           <li class="nav-item"><a class="nav-link" href="{% url 'planner:calendar' %}">Calendar</a></li>
           <li class="nav-item"><a class="nav-link" href="{% url 'diary:list' %}">Diary</a></li>
           <li class="nav-item"><a class="nav-link" href="{% url 'weather:index' %}">Weather</a></li>
+          {% if user.is_staff or user.is_superuser %}
+          <li class="nav-item">
+            <a class="nav-link d-inline-flex align-items-center gap-1" href="{% url 'accounts:admin_users' %}" title="User Traffic &amp; Access Control">
+              <i class="bi bi-people-fill"></i> Users
+              {% if pending_users_count > 0 %}
+              <span class="badge rounded-pill bg-warning text-dark font-mono" style="font-size: 0.72rem;">{{ pending_users_count }}</span>
+              {% endif %}
+            </a>
+          </li>
+          {% endif %}
         </ul>
         <ul class="navbar-nav align-items-lg-center mb-2 mb-lg-0 gap-1">
           <!-- Minimalist Theme Switcher Shortcut -->
@@ -111,16 +121,38 @@
             <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
               <i class="bi bi-person-circle"></i> {{ user.username }}
             </a>
-            <ul class="dropdown-menu dropdown-menu-end">
-              <li><a class="dropdown-item" href="{% url 'accounts:profile' %}"><i class="bi bi-gear me-1"></i> Profile settings</a></li>
+            <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+              <li><a class="dropdown-item" href="{% url 'accounts:profile' %}"><i class="bi bi-gear me-2 text-muted"></i> Profile settings</a></li>
+              {% if user.is_staff or user.is_superuser %}
+              <li><hr class="dropdown-divider"></li>
+              <li class="dropdown-header small text-uppercase fw-bold text-muted-soft">Administration</li>
+              <li>
+                <a class="dropdown-item d-flex align-items-center justify-content-between" href="{% url 'accounts:admin_users' %}">
+                  <span><i class="bi bi-shield-lock me-2 text-primary"></i> User Traffic Hub</span>
+                  {% if pending_users_count > 0 %}
+                  <span class="badge bg-warning text-dark">{{ pending_users_count }} pending</span>
+                  {% endif %}
+                </a>
+              </li>
+              <li>
+                <a class="dropdown-item" href="/admin/" target="_blank">
+                  <i class="bi bi-speedometer2 me-2 text-info"></i> Django Admin <i class="bi bi-box-arrow-up-right ms-1 text-muted" style="font-size: 0.7rem;"></i>
+                </a>
+              </li>
+              {% endif %}
               <li><hr class="dropdown-divider"></li>
               <li>
                 <form method="post" action="{% url 'accounts:logout' %}" class="px-3 py-1">
                   {% csrf_token %}
-                  <button type="submit" class="dropdown-item ps-0">Log out</button>
+                  <button type="submit" class="dropdown-item ps-0 text-danger"><i class="bi bi-box-arrow-right me-2"></i> Log out</button>
                 </form>
               </li>
             </ul>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link text-danger d-inline-flex align-items-center px-2" href="{% url 'accounts:logout' %}" title="Log out" aria-label="Log out">
+              <i class="bi bi-box-arrow-right"></i>
+            </a>
           </li>
         </ul>
         {% else %}

@@ -13,4 +13,5 @@ urlpatterns = [
     ), name='login'),
     path('logout/', auth_views.LogoutView.as_view(next_page='accounts:login'), name='logout'),
     path('profile/', views.profile, name='profile'),
+    path('toggle-theme/', views.toggle_theme, name='toggle_theme'),
 ]

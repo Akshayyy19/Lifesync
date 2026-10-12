@@ -120,6 +120,10 @@
 
       <div class="hero-stats">
         <div class="hero-stat">
+          <div class="label"><i class="bi bi-clock me-1 text-warning"></i>Local Time</div>
+          <div class="value" id="heroStatLocalTime" data-tz="{{ current.timezone }}" data-offset="{{ current.utc_offset_seconds|default:0 }}">{{ current.local_time|default:"–" }}</div>
+        </div>
+        <div class="hero-stat">
           <div class="label">Feels like</div>
           <div class="value"><span data-c="{{ current.feels_like }}">{{ current.feels_like }}&deg;</span></div>
         </div>
@@ -186,6 +190,9 @@
       <i class="bi {% if day_timeline.is_past %}bi-clock-history{% elif day_timeline.is_today %}bi-broadcast{% else %}bi-calendar-event{% endif %}"></i>
       {% if day_timeline.is_past %}Past weather{% elif day_timeline.is_today %}Live &middot; Today{% else %}Forecast{% endif %}
       &middot; {{ date_query }}
+      {% if day_timeline.is_today and current.local_time %}
+      <span class="chart-banner-time ms-2"><i class="bi bi-clock-fill me-1 text-warning"></i>Now: <strong id="chartBannerLiveTime">{{ current.local_time }}</strong></span>
+      {% endif %}
     </span>
     {% endif %}
 
@@ -203,6 +210,8 @@
       <button type="button" class="chart-expand-btn ms-auto" title="Expand chart"><i class="bi bi-arrows-fullscreen"></i></button>
     </div>
 
+    <div class="chart-summary-row"></div>
+
     <div class="svg-chart-wrapper mt-2">
       <svg class="weather-svg-chart" viewBox="0 0 1000 300" preserveAspectRatio="none"></svg>
       <div class="chart-tooltip"></div>
@@ -214,14 +223,14 @@
   <h3 class="mb-3">Weather details</h3>
   <div class="row g-3 mb-4">
     <div class="col-sm-6 col-lg-4">
-      <div class="hero-stat h-100">
+      <div class="hero-stat h-100" data-sparkline-key="temp">
         <div class="label">Temperature</div>
         <div class="value" data-c="{{ current.temp }}">{{ current.temp }}&deg;</div>
         <p class="text-muted-soft mb-0 mt-2">Ranging from <span data-c="{{ day_timeline.temp_min }}">{{ day_timeline.temp_min }}&deg;</span> to <span data-c="{{ day_timeline.temp_max }}">{{ day_timeline.temp_max }}&deg;</span> {% if day_timeline.is_today %}today{% else %}on {{ date_query }}{% endif %}.</p>
       </div>
     </div>
     <div class="col-sm-6 col-lg-4">
-      <div class="hero-stat h-100">
+      <div class="hero-stat h-100" data-sparkline-key="feels_like">
         <div class="label">Feels like</div>
         <div class="value" data-c="{{ current.feels_like }}">{{ current.feels_like }}&deg;</div>
         <p class="text-muted-soft mb-0 mt-2">
@@ -232,14 +241,14 @@
       </div>
     </div>
     <div class="col-sm-6 col-lg-4">
-      <div class="hero-stat h-100">
+      <div class="hero-stat h-100" data-sparkline-key="wind_speed">
         <div class="label">Wind</div>
         <div class="value">{{ day_timeline.avg_wind }}<small>km/h</small></div>
         <p class="text-muted-soft mb-0 mt-2">Gusts up to {{ day_timeline.max_gust }} km/h {% if day_timeline.is_today %}expected today{% else %}on {{ date_query }}{% endif %}.</p>
       </div>
     </div>
     <div class="col-sm-6 col-lg-4">
-      <div class="hero-stat h-100">
+      <div class="hero-stat h-100" data-sparkline-key="precip_mm">
         <div class="label">Precipitation</div>
         <div class="value">{{ day_timeline.total_precip_cm }}<small>cm</small></div>
         <p class="text-muted-soft mb-0 mt-2">
@@ -249,7 +258,7 @@
       </div>
     </div>
     <div class="col-sm-6 col-lg-4">
-      <div class="hero-stat h-100">
+      <div class="hero-stat h-100" data-sparkline-key="humidity">
         <div class="label">Humidity</div>
         <div class="value">{{ day_timeline.avg_humidity }}<small>%</small></div>
         <p class="text-muted-soft mb-0 mt-2">
@@ -260,7 +269,7 @@
       </div>
     </div>
     <div class="col-sm-6 col-lg-4">
-      <div class="hero-stat h-100">
+      <div class="hero-stat h-100" data-sparkline-key="uv">
         <div class="label">UV Index</div>
         <div class="value">{{ day_timeline.max_uv }}</div>
         <p class="text-muted-soft mb-0 mt-2">

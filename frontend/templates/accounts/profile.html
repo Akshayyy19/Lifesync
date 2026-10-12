@@ -17,11 +17,34 @@
             <div class="form-text">{{ form.city.help_text }}</div>
           </div>
           <div class="mb-4">
-            <label class="form-label" for="{{ form.theme_preference.id_for_label }}">Theme</label>
+            <label class="form-label" for="{{ form.theme_preference.id_for_label }}">Theme Mode</label>
             {{ form.theme_preference }}
-            <div class="form-text">"Automatic" follows your device's local time — daytime colours by day, a calmer palette after dark.</div>
+            <div class="form-text">"Automatic" follows your local time — bright solar palette by day, starlit dark mode after dusk.</div>
           </div>
-          <button type="submit" class="btn btn-sky-cta">Save changes</button>
+
+          <div class="mb-4">
+            <label class="form-label" for="{{ form.weather_effect_override.id_for_label }}">
+              <i class="bi bi-cloud-lightning-rain-fill text-warning me-1"></i> Sky Weather Effect
+            </label>
+            {{ form.weather_effect_override }}
+            <div class="form-text mb-2">Switch effects to experience all sky weather visual conditions live!</div>
+
+            <!-- Quick Experience Buttons -->
+            <div class="d-flex flex-wrap gap-1 mt-2 p-2 rounded" style="background:rgba(255,255,255,0.06); border:1px solid var(--line);">
+              <button type="button" class="btn btn-sm btn-outline-primary wx-demo-btn" data-effect="sunny">☀️ Sunny</button>
+              <button type="button" class="btn btn-sm btn-outline-primary wx-demo-btn" data-effect="hot-summer">🔥 Summer</button>
+              <button type="button" class="btn btn-sm btn-outline-primary wx-demo-btn" data-effect="sun-rain-mix">🌦️ Rainbow</button>
+              <button type="button" class="btn btn-sm btn-outline-primary wx-demo-btn" data-effect="cloudy">⛅ Cloudy</button>
+              <button type="button" class="btn btn-sm btn-outline-primary wx-demo-btn" data-effect="rainy">🌧️ Rain</button>
+              <button type="button" class="btn btn-sm btn-outline-primary wx-demo-btn" data-effect="thunderstorm">⛈️ Storm</button>
+              <button type="button" class="btn btn-sm btn-outline-primary wx-demo-btn" data-effect="snowy">❄️ Snow</button>
+              <button type="button" class="btn btn-sm btn-outline-primary wx-demo-btn" data-effect="misty">🌫️ Fog</button>
+              <button type="button" class="btn btn-sm btn-outline-primary wx-demo-btn" data-effect="clear-night">🌙 Night</button>
+              <button type="button" class="btn btn-sm btn-outline-primary wx-demo-btn" data-effect="auto">⚡ Auto</button>
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-sky-cta w-100">Save Profile Settings</button>
         </form>
       </div>
     </div>

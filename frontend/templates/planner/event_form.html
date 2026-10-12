@@ -1,6 +1,268 @@
 {% extends "base.html" %}
 {% block title %}{{ action }} event{% endblock %}
 
+{% block extra_head %}
+<style>
+/* ── Venue type selection pills ──────────────────────────────── */
+.venue-pills-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 0.35rem;
+}
+.venue-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.3rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+  background: var(--surface-alt);
+  border: 1px solid var(--line);
+  color: var(--ink-soft);
+}
+.venue-pill i {
+  font-size: 0.82rem;
+  color: var(--accent);
+}
+.venue-pill:hover {
+  transform: translateY(-1px);
+  border-color: var(--accent);
+  color: var(--ink);
+}
+.venue-pill.active {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  border-color: #2563eb;
+  color: #ffffff !important;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.35);
+}
+.venue-pill.active i {
+  color: #ffffff !important;
+}
+body.theme-night .venue-pill.active {
+  background: linear-gradient(135deg, #38bdf8 0%, #6366f1 100%);
+  border-color: #38bdf8;
+  color: #ffffff !important;
+  box-shadow: 0 4px 14px rgba(56, 189, 248, 0.35);
+}
+
+/* ── Location header layout ───────────────────────────────────── */
+.location-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.45rem;
+}
+.location-header label { margin-bottom: 0; }
+
+/* Weather-check toggle pill */
+.wx-toggle-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+  cursor: pointer;
+  user-select: none;
+  flex-shrink: 0;
+}
+.wx-toggle-wrap input[type="checkbox"] { display: none; }
+.wx-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  border: 1.5px solid var(--line);
+  background: var(--surface-alt);
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--ink-soft);
+  transition: all 0.22s ease;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.wx-pill i { font-size: 0.85rem; color: #0284c7; }
+body.theme-night .wx-pill i { color: #38bdf8; }
+
+input[type="checkbox"]:checked + .wx-pill {
+  background: linear-gradient(135deg, rgba(56,189,248,0.18) 0%, rgba(99,102,241,0.18) 100%);
+  border-color: #0284c7;
+  color: #0369a1;
+}
+body.theme-night input[type="checkbox"]:checked + .wx-pill {
+  border-color: rgba(56,189,248,0.6);
+  color: #7dd3fc;
+}
+
+/* Location note hint */
+.loc-note-hint {
+  font-size: 0.75rem;
+  color: var(--ink-soft);
+  margin-top: 0.35rem;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+/* Default date weather pill */
+.wx-date-pill {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.65rem 0.95rem;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  margin-bottom: 0.85rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+}
+body.theme-night .wx-date-pill {
+  background: var(--surface-alt);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: none;
+}
+.wx-date-pill .wx-icon { font-size: 1.6rem; color: #0284c7; }
+body.theme-night .wx-date-pill .wx-icon { color: #60a5fa; }
+.wx-date-pill .wx-label { font-size: 0.72rem; color: var(--ink-soft); }
+.wx-date-pill .wx-temp { font-size: 0.9rem; font-weight: 600; color: var(--ink); }
+
+/* ── Location weather card (Dual Theme) ────────────────────────── */
+.wx-card {
+  border-radius: 14px;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  padding: 0.95rem 1.15rem;
+  margin-top: 0.6rem;
+  animation: wxFadeIn 0.3s ease;
+  overflow: hidden;
+  position: relative;
+  transition: all 0.25s ease;
+
+  /* Light mode (default) */
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.94) 0%, rgba(240, 249, 255, 0.90) 100%);
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  box-shadow: 0 10px 25px -5px rgba(56, 189, 248, 0.15), 0 4px 12px -2px rgba(15, 23, 42, 0.05);
+  color: var(--ink);
+}
+.wx-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at top right, rgba(56, 189, 248, 0.12) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+/* Dark mode theme-night overrides */
+body.theme-night .wx-card {
+  background: linear-gradient(135deg, rgba(30, 41, 59, 0.88) 0%, rgba(15, 23, 42, 0.95) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 15px 35px -5px rgba(0, 0, 0, 0.5);
+  color: var(--ink);
+}
+body.theme-night .wx-card::before {
+  background: radial-gradient(ellipse at top right, rgba(56, 189, 248, 0.08) 0%, transparent 65%);
+}
+
+@keyframes wxFadeIn {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.wx-loc-header { display: flex; align-items: flex-start; gap: 0.95rem; }
+.wx-loc-icon   { font-size: 2.5rem; line-height: 1; color: #0284c7; flex-shrink: 0; }
+body.theme-night .wx-loc-icon { color: #38bdf8; }
+
+.wx-loc-main   { flex: 1; min-width: 0; }
+.wx-loc-city   { font-size: 0.88rem; font-weight: 700; color: var(--ink); }
+.wx-loc-sub    { font-size: 0.72rem; color: var(--ink-soft); margin-top: 0.1rem; }
+.wx-loc-temp   { font-size: 1.75rem; font-weight: 800; line-height: 1.1; letter-spacing: -0.5px; color: var(--ink); margin-top: 0.2rem; }
+.wx-loc-temp .range { font-size: 0.72rem; font-weight: 500; color: var(--ink-soft); }
+.wx-loc-desc   { font-size: 0.78rem; color: var(--ink-soft); margin-top: 0.15rem; font-weight: 500; }
+
+.wx-hourly-badge {
+  display: inline-flex; align-items: center; gap: 0.35rem;
+  padding: 0.22rem 0.65rem; border-radius: 20px;
+  font-size: 0.7rem; font-weight: 600; margin-top: 0.35rem;
+  background: rgba(14, 165, 233, 0.14);
+  border: 1px solid rgba(14, 165, 233, 0.35);
+  color: #0369a1;
+}
+body.theme-night .wx-hourly-badge {
+  background: rgba(56, 189, 248, 0.18);
+  border: 1px solid rgba(56, 189, 248, 0.4);
+  color: #7dd3fc;
+}
+
+.wx-metrics { display: flex; flex-wrap: wrap; gap: 0.45rem; margin-top: 0.75rem; }
+.wx-chip {
+  display: inline-flex; align-items: center; gap: 0.35rem;
+  padding: 0.25rem 0.65rem; border-radius: 8px;
+  font-size: 0.72rem; font-weight: 500; white-space: nowrap;
+  background: rgba(255, 255, 255, 0.88);
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  color: var(--ink-soft);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+}
+body.theme-night .wx-chip {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #94a3b8;
+  box-shadow: none;
+}
+.wx-chip i { font-size: 0.75rem; }
+
+.wx-divider {
+  border: none;
+  margin: 0.75rem 0 0.6rem;
+  border-top: 1px solid rgba(148, 163, 184, 0.25);
+}
+body.theme-night .wx-divider {
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.wx-loading {
+  display: flex; align-items: center; gap: 0.6rem;
+  padding: 0.6rem 0.2rem; font-size: 0.78rem; color: var(--ink-soft);
+}
+.wx-loading .spinner-border { width: 1.1rem; height: 1.1rem; border-width: 2px; }
+.wx-error {
+  font-size: 0.75rem; color: #ef4444;
+  display: flex; align-items: center; gap: 0.4rem; padding: 0.4rem 0;
+}
+body.theme-night .wx-error { color: #f87171; }
+
+.wx-type-badge {
+  display: inline-flex; align-items: center; gap: 0.25rem;
+  font-size: 0.65rem; font-weight: 600; padding: 0.12rem 0.45rem;
+  border-radius: 20px; margin-left: 0.4rem; vertical-align: middle;
+  text-transform: uppercase; letter-spacing: 0.4px;
+}
+.wx-type-badge.future {
+  background: rgba(99, 102, 241, 0.12); color: #4f46e5; border: 1px solid rgba(99, 102, 241, 0.3);
+}
+body.theme-night .wx-type-badge.future {
+  background: rgba(99, 102, 241, 0.2); color: #a78bfa; border: 1px solid rgba(99, 102, 241, 0.35);
+}
+.wx-type-badge.past {
+  background: rgba(107, 114, 128, 0.12); color: #4b5563; border: 1px solid rgba(107, 114, 128, 0.25);
+}
+body.theme-night .wx-type-badge.past {
+  background: rgba(107, 114, 128, 0.2); color: #9ca3af; border: 1px solid rgba(107, 114, 128, 0.35);
+}
+.wx-type-badge.today {
+  background: rgba(34, 197, 94, 0.15); color: #15803d; border: 1px solid rgba(34, 197, 94, 0.3);
+}
+body.theme-night .wx-type-badge.today {
+  background: rgba(34, 197, 94, 0.15); color: #4ade80; border: 1px solid rgba(34, 197, 94, 0.3);
+}
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="row justify-content-center">
   <div class="col-md-7">
@@ -8,30 +270,42 @@
       <div class="card-body">
         <h1 class="h3 mb-4">{{ action }} to your calendar</h1>
 
-        <form method="post">
+        <form method="post" id="eventForm">
           {% csrf_token %}
 
+          <!-- Type -->
           <div class="mb-3">
             <label class="form-label" for="{{ form.category.id_for_label }}">Type</label>
             {{ form.category }}
           </div>
 
+          <!-- Default date weather pill (updates dynamically) -->
           {% if predicted_weather %}
-          <div class="alert d-flex align-items-center gap-3 py-2 px-3 mb-3 border-0" style="background: var(--surface-alt); border-radius: 10px;">
-            <i class="bi bi-{% if predicted_weather.condition == 'sunny' %}sun-fill{% elif predicted_weather.condition == 'clear-night' %}moon-stars-fill{% elif predicted_weather.condition == 'rainy' %}cloud-rain-fill{% elif predicted_weather.condition == 'snowy' %}snow{% elif predicted_weather.condition == 'thunderstorm' %}cloud-lightning-rain-fill{% elif predicted_weather.condition == 'misty' %}cloud-haze2-fill{% else %}cloud-fill{% endif %}" style="font-size:1.6rem; color:var(--accent-ink);"></i>
+          <div class="wx-date-pill" id="dateWeatherPill">
+            <i class="bi bi-{% if predicted_weather.condition == 'sunny' or predicted_weather.condition == 'hot-summer' %}sun-fill{% elif predicted_weather.condition == 'clear-night' or predicted_weather.condition == 'hot-summer-night' %}moon-stars-fill{% elif predicted_weather.condition == 'sun-rain-mix' %}cloud-sun-fill{% elif predicted_weather.condition == 'rainy' %}cloud-rain-fill{% elif predicted_weather.condition == 'snowy' %}snow{% elif predicted_weather.condition == 'thunderstorm' %}cloud-lightning-rain-fill{% elif predicted_weather.condition == 'misty' %}cloud-haze2-fill{% else %}cloud-fill{% endif %} wx-icon" id="dateWxIcon"></i>
             <div>
-              <div class="fw-medium small">Predicted Weather Forecast for {{ target_date }}</div>
-              <div class="text-muted-soft small"><strong>{{ predicted_weather.temp }}&deg;C</strong> &middot; {{ predicted_weather.description }}</div>
+              <div class="wx-label">Predicted Weather for <span id="dateWxLabel">{{ target_date }}</span></div>
+              <div class="wx-temp"><strong id="dateWxTemp">{{ predicted_weather.temp }}°C</strong> &middot; <span id="dateWxDesc">{{ predicted_weather.description }}</span></div>
+            </div>
+          </div>
+          {% else %}
+          <div class="wx-date-pill" id="dateWeatherPill" style="display:none;">
+            <i class="bi bi-cloud-fill wx-icon" id="dateWxIcon"></i>
+            <div>
+              <div class="wx-label">Predicted Weather for <span id="dateWxLabel">{{ target_date }}</span></div>
+              <div class="wx-temp"><strong id="dateWxTemp">--°C</strong> &middot; <span id="dateWxDesc">--</span></div>
             </div>
           </div>
           {% endif %}
 
+          <!-- Title -->
           <div class="mb-3">
             <label class="form-label" for="{{ form.title.id_for_label }}">Title</label>
             {{ form.title }}
             {% for error in form.title.errors %}<div class="text-danger small mt-1">{{ error }}</div>{% endfor %}
           </div>
 
+          <!-- Date + Time -->
           <div class="row">
             <div class="col-md-6 mb-3">
               <label class="form-label" for="{{ form.date.id_for_label }}">Date</label>
@@ -45,16 +319,83 @@
             </div>
           </div>
 
-          <div class="mb-3">
-            <label class="form-label" for="{{ form.location.id_for_label }}">Location</label>
-            {{ form.location }}
+          <!-- Venue / Place Type -->
+          <div class="mb-3" id="venueTypeSection">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+              <label class="form-label mb-0" for="{{ form.venue_type.id_for_label }}">
+                <i class="bi bi-building-fill-check text-primary me-1"></i> Venue / Place Type
+                <span class="text-muted-soft" style="font-size:0.75rem;font-weight:400;">&nbsp;— stadium, hotel, hall, etc.</span>
+              </label>
+              <button type="button" class="btn btn-link btn-sm p-0 text-muted-soft text-decoration-none" id="clearVenueBtn" style="font-size:0.75rem; display:none;">
+                <i class="bi bi-x-circle"></i> Clear
+              </button>
+            </div>
+
+            <!-- Quick pick pills -->
+            <div class="venue-pills-container" id="venuePills">
+              <span class="venue-pill" data-val="stadium"><i class="bi bi-trophy-fill"></i> Stadium / Arena</span>
+              <span class="venue-pill" data-val="hotel"><i class="bi bi-building"></i> Hotel / Resort</span>
+              <span class="venue-pill" data-val="restaurant"><i class="bi bi-cup-hot-fill"></i> Restaurant / Cafe</span>
+              <span class="venue-pill" data-val="park"><i class="bi bi-tree-fill"></i> Park / Garden</span>
+              <span class="venue-pill" data-val="indoor"><i class="bi bi-door-open-fill"></i> Indoor Hall</span>
+              <span class="venue-pill" data-val="outdoor"><i class="bi bi-sun-fill"></i> Outdoor</span>
+              <span class="venue-pill" data-val="office"><i class="bi bi-briefcase-fill"></i> Office</span>
+              <span class="venue-pill" data-val="school"><i class="bi bi-mortarboard-fill"></i> School / Univ</span>
+              <span class="venue-pill" data-val="home"><i class="bi bi-house-door-fill"></i> Home</span>
+              <span class="venue-pill" data-val="virtual"><i class="bi bi-camera-video-fill"></i> Virtual</span>
+              <span class="venue-pill" data-val="other"><i class="bi bi-pin-map-fill"></i> Other</span>
+            </div>
+
+            <div class="mt-2">
+              {{ form.venue_type }}
+            </div>
+            {% for error in form.venue_type.errors %}<div class="text-danger small mt-1">{{ error }}</div>{% endfor %}
           </div>
 
+          <!-- Location (optional note) + weather toggle -->
+          <div class="mb-3">
+            <div class="location-header">
+              <label class="form-label" for="{{ form.location.id_for_label }}">
+                <i class="bi bi-geo-alt-fill text-primary me-1"></i> Specific Place / Location Note
+                <span class="text-muted-soft" style="font-size:0.72rem;font-weight:400;">&nbsp;— optional note</span>
+              </label>
+              <label class="wx-toggle-wrap" id="wxToggleLabel" title="Look up weather for this location">
+                <input type="checkbox" id="wxLocationToggle">
+                <span class="wx-pill">
+                  <i class="bi bi-cloud-sun-fill"></i>
+                  Check weather here
+                </span>
+              </label>
+            </div>
+
+            {{ form.location }}
+
+            <div class="loc-note-hint" id="locNoteHint">
+              <i class="bi bi-info-circle text-primary" style="font-size:0.72rem;"></i>
+              <span id="locHintText">Just an optional note (e.g. "Room 402", "North Gate", or a city name). Weather will only be looked up if you toggle "Check weather here".</span>
+            </div>
+
+            <!-- Location weather result panel -->
+            <div id="locationWeatherPanel" style="display:none;">
+              <div id="locationWeatherLoading" class="wx-loading" style="display:none;">
+                <div class="spinner-border text-info" role="status"></div>
+                <span>Looking up weather for this location…</span>
+              </div>
+              <div id="locationWeatherError" class="wx-error" style="display:none;">
+                <i class="bi bi-exclamation-circle-fill"></i>
+                <span id="locationWeatherErrorMsg"></span>
+              </div>
+              <div id="locationWeatherCard" class="wx-card" style="display:none;"></div>
+            </div>
+          </div>
+
+          <!-- Notes -->
           <div class="mb-3">
             <label class="form-label" for="{{ form.description.id_for_label }}">Notes</label>
             {{ form.description }}
           </div>
 
+          <!-- Remind me -->
           <div class="mb-4">
             <label class="form-label" for="{{ form.remind_before_minutes.id_for_label }}">Remind me</label>
             {{ form.remind_before_minutes }}
@@ -77,16 +418,275 @@
 
 {% block extra_js %}
 <script>
-document.addEventListener('DOMContentLoaded', function () {
-  var categoryField = document.getElementById('{{ form.category.id_for_label }}');
-  var timeWrap = document.getElementById('timeFieldWrap');
+(function () {
+  'use strict';
+
+  const categoryField   = document.getElementById('{{ form.category.id_for_label }}');
+  const timeWrap        = document.getElementById('timeFieldWrap');
+  const dateField       = document.getElementById('{{ form.date.id_for_label }}');
+  const timeField       = document.getElementById('{{ form.time.id_for_label }}');
+  const venueTypeSelect = document.getElementById('{{ form.venue_type.id_for_label }}');
+  const venuePills      = document.querySelectorAll('#venuePills .venue-pill');
+  const clearVenueBtn   = document.getElementById('clearVenueBtn');
+  const locationField   = document.getElementById('{{ form.location.id_for_label }}');
+  const wxToggle        = document.getElementById('wxLocationToggle');
+  const locNoteHint     = document.getElementById('locNoteHint');
+  const locHintText     = document.getElementById('locHintText');
+  const locationPanel   = document.getElementById('locationWeatherPanel');
+  const locationLoading = document.getElementById('locationWeatherLoading');
+  const locationError   = document.getElementById('locationWeatherError');
+  const locationErrMsg  = document.getElementById('locationWeatherErrorMsg');
+  const locationCard    = document.getElementById('locationWeatherCard');
+  const dateWeatherPill = document.getElementById('dateWeatherPill');
+  const dateWxIcon      = document.getElementById('dateWxIcon');
+  const dateWxLabel     = document.getElementById('dateWxLabel');
+  const dateWxTemp      = document.getElementById('dateWxTemp');
+  const dateWxDesc      = document.getElementById('dateWxDesc');
+
+  /* CSRF */
+  function getCookie(name) {
+    const v = `; ${document.cookie}`, p = v.split(`; ${name}=`);
+    return p.length === 2 ? p.pop().split(';').shift() : '';
+  }
+  const CSRF = getCookie('csrftoken');
+
+  /* Condition → Bootstrap icon */
+  const COND_ICON = {
+    'sunny':'sun-fill','hot-summer':'sun-fill',
+    'clear-night':'moon-stars-fill','hot-summer-night':'moon-stars-fill',
+    'cloudy':'cloud-fill','rainy':'cloud-rain-fill',
+    'sun-rain-mix':'cloud-sun-fill','snowy':'snow',
+    'thunderstorm':'cloud-lightning-rain-fill','misty':'cloud-haze2-fill',
+  };
+  const ci = cond => COND_ICON[cond] || 'cloud-fill';
+
+  /* ── Venue Type Quick-Pills & Dynamic Placeholders ─────────────────── */
+  const VENUE_PLACEHOLDERS = {
+    'stadium': 'e.g. Wembley Stadium, London or Wankhede, Mumbai',
+    'hotel': 'e.g. Grand Hyatt, Ballroom 2, or Marriott Goa',
+    'restaurant': 'e.g. Starbucks Downtown, Cafe Mocha, or Olive Garden',
+    'park': 'e.g. Central Park, Hyde Park, or Riverside Gardens',
+    'indoor': 'e.g. City Convention Hall, Exhibition Center',
+    'outdoor': 'e.g. North Beach Pavilion, Open Grounds',
+    'office': 'e.g. HQ Conference Room 4B, Tech Hub',
+    'school': 'e.g. Main Auditorium, Science Wing Hall 101',
+    'home': 'e.g. John’s Apartment, 42 Elm Street',
+    'virtual': 'e.g. Google Meet, Zoom link, or Teams',
+    'other': 'e.g. City Center or specific landmark',
+  };
+
+  function syncVenueUI(val) {
+    venuePills.forEach(pill => {
+      pill.classList.toggle('active', pill.getAttribute('data-val') === val);
+    });
+    if (clearVenueBtn) {
+      clearVenueBtn.style.display = val ? 'inline-block' : 'none';
+    }
+    if (locationField && val && VENUE_PLACEHOLDERS[val]) {
+      locationField.placeholder = VENUE_PLACEHOLDERS[val];
+    } else if (locationField) {
+      locationField.placeholder = 'Optional note (e.g. Lords Ground, Marriott, Mumbai)';
+    }
+  }
+
+  if (venueTypeSelect) {
+    venueTypeSelect.addEventListener('change', function () {
+      syncVenueUI(this.value);
+    });
+    // Initial sync
+    syncVenueUI(venueTypeSelect.value);
+  }
+
+  venuePills.forEach(pill => {
+    pill.addEventListener('click', function () {
+      const val = this.getAttribute('data-val');
+      if (venueTypeSelect) {
+        if (venueTypeSelect.value === val) {
+          venueTypeSelect.value = '';
+          syncVenueUI('');
+        } else {
+          venueTypeSelect.value = val;
+          syncVenueUI(val);
+        }
+      }
+    });
+  });
+
+  if (clearVenueBtn) {
+    clearVenueBtn.addEventListener('click', function () {
+      if (venueTypeSelect) {
+        venueTypeSelect.value = '';
+        syncVenueUI('');
+      }
+    });
+  }
+
+  /* Category → hide time */
   function syncTimeVisibility() {
-    timeWrap.style.display = categoryField.value === 'birthday' ? 'none' : '';
+    if (timeWrap && categoryField)
+      timeWrap.style.display = categoryField.value === 'birthday' ? 'none' : '';
   }
-  if (categoryField && timeWrap) {
-    categoryField.addEventListener('change', syncTimeVisibility);
-    syncTimeVisibility();
+  if (categoryField) { categoryField.addEventListener('change', syncTimeVisibility); syncTimeVisibility(); }
+
+  /* Default-date weather pill — refresh when date field changes */
+  let dateWxTimer = null;
+  function fetchDateWeather(dt) {
+    if (!dt) return;
+    fetch(`/planner/api/weather/?date=${encodeURIComponent(dt)}`, { headers: {'X-CSRFToken': CSRF} })
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (!data || data.error) { dateWeatherPill.style.display = 'none'; return; }
+        dateWxIcon.className = `bi bi-${ci(data.condition)} wx-icon`;
+        dateWxLabel.textContent = dt;
+        dateWxTemp.textContent = `${data.temp}°C`;
+        dateWxDesc.textContent = data.description || '';
+        dateWeatherPill.style.display = 'flex';
+      })
+      .catch(() => { dateWeatherPill.style.display = 'none'; });
   }
-});
+  if (dateField) {
+    dateField.addEventListener('change', function () {
+      clearTimeout(dateWxTimer);
+      dateWxTimer = setTimeout(() => {
+        fetchDateWeather(this.value);
+        if (wxToggle && wxToggle.checked) fetchLocationWeather();
+      }, 300);
+    });
+  }
+
+  /* Toggle */
+  if (wxToggle) {
+    wxToggle.addEventListener('change', function () {
+      if (this.checked) {
+        locationPanel.style.display = 'block';
+        locNoteHint.style.display   = 'none';
+        fetchLocationWeather();
+      } else {
+        locationPanel.style.display  = 'none';
+        locNoteHint.style.display    = 'flex';
+        locationCard.style.display   = 'none';
+        locationError.style.display  = 'none';
+      }
+    });
+  }
+
+  /* Fetch location weather */
+  let locTimer = null, abortCtrl = null;
+  function fetchLocationWeather() {
+    const loc = locationField ? locationField.value.trim() : '';
+    const dt  = dateField ? dateField.value : '';
+    const tm  = timeField ? timeField.value : '';
+    if (!loc) { showLocError('Enter a location or city name to check its weather.'); return; }
+    if (!dt)  { showLocError('Please select a date first.'); return; }
+
+    showLocLoading();
+    let url = `/planner/api/location-weather/?location=${encodeURIComponent(loc)}&date=${encodeURIComponent(dt)}`;
+    if (tm) url += `&time=${encodeURIComponent(tm)}`;
+
+    if (abortCtrl) abortCtrl.abort();
+    abortCtrl = new AbortController();
+    fetch(url, { signal: abortCtrl.signal, headers: {'X-CSRFToken': CSRF} })
+      .then(r => r.ok ? r.json() : r.json().then(d => { throw d; }))
+      .then(data => { abortCtrl = null; renderLocationWeather(data, loc, dt, tm); })
+      .catch(err => {
+        abortCtrl = null;
+        if (err && err.name === 'AbortError') return;
+        const msg = err && err.error === 'location_not_found'
+          ? `"${loc}" wasn't recognised for weather lookup. Try adding a city name (e.g. "${loc}, Mumbai" or "Paris").`
+          : err && err.error === 'weather_unavailable'
+            ? 'Weather data is unavailable for this location or date range.'
+            : 'Could not fetch weather. Check your connection and try again.';
+        showLocError(msg);
+      });
+  }
+
+  function showLocLoading() {
+    locationCard.style.display    = 'none';
+    locationError.style.display   = 'none';
+    locationLoading.style.display = 'flex';
+  }
+  function showLocError(msg) {
+    locationLoading.style.display = 'none';
+    locationCard.style.display    = 'none';
+    locationErrMsg.textContent    = msg;
+    locationError.style.display   = 'flex';
+  }
+
+  function typeBadge(d) {
+    if (d.is_today)  return '<span class="wx-type-badge today"><i class="bi bi-circle-fill" style="font-size:0.45rem;"></i>Live</span>';
+    if (d.is_future) return '<span class="wx-type-badge future"><i class="bi bi-stars" style="font-size:0.6rem;"></i>Predicted</span>';
+    if (d.is_past)   return '<span class="wx-type-badge past"><i class="bi bi-clock-history" style="font-size:0.6rem;"></i>Historical</span>';
+    return '';
+  }
+
+  function renderLocationWeather(data, loc, dt, tm) {
+    locationLoading.style.display = 'none';
+    locationError.style.display   = 'none';
+    const d = data.daily, h = data.hourly;
+    const cityLine = `${d.city}${d.country ? ', ' + d.country : ''}`;
+
+    let hourlyHtml = '';
+    if (h) {
+      hourlyHtml = `
+        <hr class="wx-divider">
+        <div style="display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap;">
+          <span class="wx-hourly-badge"><i class="bi bi-clock-fill"></i> At ${h.time}</span>
+          <span style="font-size:0.72rem;color:var(--ink-soft);font-weight:500;">— event time forecast</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:0.75rem;margin-top:0.5rem;">
+          <i class="bi bi-${ci(h.condition)}" style="font-size:1.6rem;color:#0284c7;"></i>
+          <div>
+            <div style="font-size:1.15rem;font-weight:700;color:var(--ink);">${h.temp}°C
+              <span style="font-size:0.75rem;font-weight:500;color:var(--ink-soft);">&middot; feels ${h.feels_like}°C</span>
+            </div>
+            <div style="font-size:0.74rem;color:var(--ink-soft);">${h.description}</div>
+          </div>
+        </div>
+        <div class="wx-metrics">
+          <span class="wx-chip"><i class="bi bi-droplet-fill text-primary"></i>${h.humidity}% humidity</span>
+          <span class="wx-chip"><i class="bi bi-wind text-primary"></i>${h.wind_speed} km/h wind</span>
+          <span class="wx-chip"><i class="bi bi-umbrella-fill text-primary"></i>${h.precip_prob}% rain chance</span>
+        </div>`;
+    }
+
+    locationCard.innerHTML = `
+      <div class="wx-loc-header">
+        <i class="bi bi-${ci(d.condition)} wx-loc-icon"></i>
+        <div class="wx-loc-main">
+          <div class="wx-loc-city">
+            <i class="bi bi-geo-alt-fill text-primary" style="font-size:0.75rem;margin-right:3px;"></i>${cityLine}${typeBadge(d)}
+          </div>
+          <div class="wx-loc-sub">${dt}${tm ? ' &middot; Scheduled at ' + tm : ''}</div>
+          <div class="wx-loc-temp">${d.temp}°C
+            <span class="range">(${d.temp_min}°–${d.temp_max}° range)</span>
+          </div>
+          <div class="wx-loc-desc">${d.description}</div>
+          <div class="wx-metrics">
+            <span class="wx-chip"><i class="bi bi-droplet-fill text-primary"></i>${d.avg_humidity}% avg humidity</span>
+            <span class="wx-chip"><i class="bi bi-wind text-primary"></i>${d.avg_wind} km/h wind</span>
+            <span class="wx-chip"><i class="bi bi-umbrella-fill text-primary"></i>${d.max_precip_prob}% rain chance</span>
+          </div>
+        </div>
+      </div>${hourlyHtml}`;
+
+    locationCard.style.display = 'block';
+  }
+
+  /* Debounced re-fetch on location input / time change */
+  if (locationField) {
+    locationField.addEventListener('input', function () {
+      if (!wxToggle || !wxToggle.checked) return;
+      clearTimeout(locTimer);
+      locTimer = setTimeout(fetchLocationWeather, 700);
+    });
+  }
+  if (timeField) {
+    timeField.addEventListener('change', function () {
+      if (!wxToggle || !wxToggle.checked) return;
+      clearTimeout(locTimer);
+      locTimer = setTimeout(fetchLocationWeather, 300);
+    });
+  }
+})();
 </script>
 {% endblock %}

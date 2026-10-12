@@ -4,8 +4,11 @@ register = template.Library()
 
 CONDITION_ICONS = {
     'sunny': 'bi-brightness-high-fill',
+    'hot-summer': 'bi-sun-fill',
+    'hot-summer-night': 'bi-moon-stars-fill',
     'clear-night': 'bi-moon-stars-fill',
     'cloudy': 'bi-clouds-fill',
+    'sun-rain-mix': 'bi-cloud-sun-fill',
     'rainy': 'bi-cloud-rain-fill',
     'snowy': 'bi-cloud-snow-fill',
     'thunderstorm': 'bi-cloud-lightning-rain-fill',

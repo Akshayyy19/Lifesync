@@ -13,10 +13,64 @@
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
 <link rel="stylesheet" href="{% static 'css/style.css' %}">
+<style>
+/* Minimalist Navbar Theme Toggle */
+.sky-theme-toggle {
+  background: rgba(255, 255, 255, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  margin: 0 4px;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.14);
+  transition: background 0.25s ease, border-color 0.25s ease, transform 0.2s ease, box-shadow 0.25s ease;
+  outline: none;
+  flex-shrink: 0;
+}
+.sky-theme-toggle:hover {
+  background: rgba(255, 255, 255, 0.3);
+  border-color: rgba(255, 255, 255, 0.6);
+  transform: scale(1.1);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+}
+.sky-theme-toggle:active {
+  transform: scale(0.9);
+}
+.sky-theme-toggle i {
+  font-size: 1.05rem;
+  line-height: 1;
+  display: inline-block;
+  transition: color 0.25s ease;
+}
+</style>
+<script>
+(function() {
+  try {
+    var saved = localStorage.getItem('lifesync_theme_pref');
+    if (saved === 'night') {
+      document.documentElement.setAttribute('data-bs-theme', 'dark');
+    } else if (saved === 'day') {
+      document.documentElement.setAttribute('data-bs-theme', 'light');
+    }
+  } catch(_) {}
+})();
+</script>
 {% block extra_head %}{% endblock %}
 </head>
 <body data-theme-pref="{{ request.user.profile.theme_preference|default:'auto' }}"
+      data-weather-override="{{ request.user.profile.weather_effect_override|default:'auto' }}"
       data-weather-condition="{{ weather.condition|default:'' }}"
+      data-weather-temp="{{ weather.temp|default:'' }}"
+      data-weather-is-day="{% if weather.is_day %}true{% elif weather.is_day is False %}false{% else %}{% endif %}"
+      data-sunrise="{{ weather.sunrise|default:'' }}"
+      data-sunset="{{ weather.sunset|default:'' }}"
       style="display:flex; flex-direction:column; min-height:100vh;">
 
 <header class="sky-header">
@@ -38,7 +92,13 @@
           <li class="nav-item"><a class="nav-link" href="{% url 'diary:list' %}">Diary</a></li>
           <li class="nav-item"><a class="nav-link" href="{% url 'weather:index' %}">Weather</a></li>
         </ul>
-        <ul class="navbar-nav align-items-lg-center mb-2 mb-lg-0">
+        <ul class="navbar-nav align-items-lg-center mb-2 mb-lg-0 gap-1">
+          <!-- Minimalist Theme Switcher Shortcut -->
+          <li class="nav-item">
+            <button type="button" class="sky-theme-toggle" id="headerThemeToggle" title="Toggle theme" aria-label="Toggle theme">
+              <i class="bi bi-sun-fill"></i>
+            </button>
+          </li>
           <li class="nav-item">
             <a class="nav-link position-relative" href="{% url 'notifications:list' %}" title="Notifications">
               <i class="bi bi-bell-fill"></i>
@@ -64,7 +124,12 @@
           </li>
         </ul>
         {% else %}
-        <ul class="navbar-nav ms-auto align-items-lg-center">
+        <ul class="navbar-nav ms-auto align-items-lg-center gap-1">
+          <li class="nav-item">
+            <button type="button" class="sky-theme-toggle" id="headerThemeToggleGuest" title="Toggle theme" aria-label="Toggle theme">
+              <i class="bi bi-sun-fill"></i>
+            </button>
+          </li>
           <li class="nav-item"><a class="nav-link" href="{% url 'accounts:login' %}">Log in</a></li>
           <li class="nav-item"><a class="btn btn-sky-cta ms-lg-2" href="{% url 'accounts:register' %}">Get started</a></li>
         </ul>
@@ -98,6 +163,27 @@
 </footer>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+/* updateThemeIcons is now fully handled by theme.js's updateThemeIcons.
+   This stub keeps backward-compatibility for any legacy callers. */
+window.updateThemeIcons = function(isDark) {
+  document.querySelectorAll('.sky-theme-toggle').forEach(function(btn) {
+    var icon = btn.querySelector('i');
+    if (!icon) return;
+    if (isDark) {
+      icon.className = 'bi bi-moon-stars-fill';
+      icon.style.color = '#7dd3fc';
+      icon.style.filter = 'drop-shadow(0 0 5px rgba(56,189,248,0.8))';
+      btn.setAttribute('title', 'Dark mode — click for light');
+    } else {
+      icon.className = 'bi bi-sun-fill';
+      icon.style.color = '#fbbf24';
+      icon.style.filter = 'drop-shadow(0 0 5px rgba(251,191,36,0.85))';
+      btn.setAttribute('title', 'Light mode — click for dark');
+    }
+  });
+};
+</script>
 <script src="{% static 'js/theme.js' %}"></script>
 {% block extra_js %}{% endblock %}
 </body>

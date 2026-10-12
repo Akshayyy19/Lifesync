@@ -55,8 +55,9 @@ class RegisterForm(UserCreationForm):
 class ProfileForm(forms.ModelForm):
     class Meta:
         model = Profile
-        fields = ['city', 'theme_preference']
+        fields = ['city', 'theme_preference', 'weather_effect_override']
         widgets = {
             'city': forms.TextInput(attrs={'class': 'form-control'}),
             'theme_preference': forms.Select(attrs={'class': 'form-select'}),
+            'weather_effect_override': forms.Select(attrs={'class': 'form-select', 'id': 'weatherEffectSelect'}),
         }

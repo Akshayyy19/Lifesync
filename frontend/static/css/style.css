@@ -57,6 +57,93 @@ body.theme-night {
 }
 
 /* ==========================================================================
+   Weather Condition Tokens (Dynamic Theme Atmosphere)
+   ========================================================================== */
+
+/* Light Theme Weather Variations */
+body.theme-day.weather-hot-summer {
+  --sky-top: #c2410c;
+  --sky-mid: #f59e0b;
+  --sky-horizon: #fef08a;
+  --accent: #ea580c;
+}
+body.theme-day.weather-sun-rain-mix {
+  --sky-top: #1d4ed8;
+  --sky-mid: #60a5fa;
+  --sky-horizon: #cbd5e1;
+  --accent: #0284c7;
+}
+body.theme-day.weather-rainy {
+  --sky-top: #334155;
+  --sky-mid: #475569;
+  --sky-horizon: #94a3b8;
+  --accent: #0284c7;
+}
+body.theme-day.weather-thunderstorm {
+  --sky-top: #1e1b4b;
+  --sky-mid: #312e81;
+  --sky-horizon: #475569;
+  --accent: #7c3aed;
+}
+body.theme-day.weather-cloudy {
+  --sky-top: #475569;
+  --sky-mid: #64748b;
+  --sky-horizon: #cbd5e1;
+}
+body.theme-day.weather-snowy {
+  --sky-top: #1e3a8a;
+  --sky-mid: #3b82f6;
+  --sky-horizon: #e0f2fe;
+}
+body.theme-day.weather-misty {
+  --sky-top: #64748b;
+  --sky-mid: #94a3b8;
+  --sky-horizon: #e2e8f0;
+}
+
+/* Dark Theme Weather Variations (Keeps Dark UI, Tints Atmospheric Sky) */
+body.theme-night.weather-hot-summer,
+body.theme-night.weather-hot-summer-night {
+  --sky-top: #1a0802;
+  --sky-mid: #2b1104;
+  --sky-horizon: #3f1a07;
+  --accent: #f59e0b;
+}
+body.theme-night.weather-sun-rain-mix {
+  --sky-top: #060b14;
+  --sky-mid: #0e1e36;
+  --sky-horizon: #1e293b;
+  --accent: #38bdf8;
+}
+body.theme-night.weather-rainy {
+  --sky-top: #060910;
+  --sky-mid: #0f172a;
+  --sky-horizon: #1e293b;
+  --accent: #38bdf8;
+}
+body.theme-night.weather-thunderstorm {
+  --sky-top: #0a0614;
+  --sky-mid: #140d25;
+  --sky-horizon: #1f1636;
+  --accent: #a855f7;
+}
+body.theme-night.weather-cloudy {
+  --sky-top: #090e18;
+  --sky-mid: #141c2c;
+  --sky-horizon: #1e293b;
+}
+body.theme-night.weather-snowy {
+  --sky-top: #040c1c;
+  --sky-mid: #0c1c38;
+  --sky-horizon: #1a2c4e;
+}
+body.theme-night.weather-misty {
+  --sky-top: #0b121c;
+  --sky-mid: #15202e;
+  --sky-horizon: #1f2f42;
+}
+
+/* ==========================================================================
    Base
    ========================================================================== */
 
@@ -246,6 +333,43 @@ label, .form-label { font-weight: 600; font-family: var(--font-display); color: 
   100% { box-shadow: 0 0 0 0 rgba(236, 72, 153, 0); }
 }
 
+/* Minimalist Theme Toggle Button in Sky Navbar */
+.theme-toggle-btn {
+  background: rgba(255, 255, 255, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: #ffffff;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-radius: 50%;
+  width: 38px;
+  height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  margin: 0 4px;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  position: relative;
+  outline: none;
+}
+.theme-toggle-btn:hover {
+  transform: translateY(-2px) scale(1.08);
+  background: rgba(255, 255, 255, 0.28);
+  border-color: rgba(255, 255, 255, 0.55);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.22);
+}
+.theme-toggle-btn:active {
+  transform: scale(0.92);
+}
+.theme-toggle-btn i {
+  font-size: 1.15rem;
+  line-height: 1;
+  display: inline-block;
+  transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), color 0.25s ease;
+}
+
 .hero-band {
   position: relative;
   z-index: 2;
@@ -262,44 +386,152 @@ label, .form-label { font-weight: 600; font-family: var(--font-display); color: 
   box-shadow: 0 0 60px 20px rgba(253, 224, 71, 0.6);
   animation: float 6s ease-in-out infinite;
 }
+
+/* Hot Summer Sun & Heat Shimmer */
+.sky-sun-hot {
+  width: 95px; height: 95px;
+  background: radial-gradient(circle at 35% 35%, #fff, #fef08a 25%, #f59e0b 60%, #ea580c 100%);
+  box-shadow: 0 0 90px 30px rgba(245, 158, 11, 0.8), 0 0 150px 60px rgba(234, 88, 12, 0.45);
+  animation: heatPulse 4s ease-in-out infinite alternate;
+}
+.sky-sun-corona {
+  position: absolute; width: 140px; height: 140px; border-radius: 50%;
+  margin-top: -22px; margin-right: -22px;
+  background: radial-gradient(circle, rgba(254, 240, 138, 0.35) 0%, rgba(249, 115, 22, 0.15) 50%, transparent 75%);
+  animation: coronaPulse 3.5s ease-in-out infinite alternate;
+  pointer-events: none;
+}
+.sky-sun-rays {
+  position: absolute; width: 220px; height: 220px;
+  margin-top: -62px; margin-right: -62px;
+  animation: sunRaySpin 45s linear infinite;
+  pointer-events: none;
+}
+.sky-sun-ray {
+  position: absolute; top: 0; left: 50%; width: 3px; height: 100%;
+  background: linear-gradient(180deg, transparent 0%, rgba(254, 240, 138, 0.5) 20%, transparent 50%, rgba(254, 240, 138, 0.5) 80%, transparent 100%);
+  margin-left: -1.5px;
+}
+.sky-heat-particle {
+  position: absolute; width: 5px; height: 5px; border-radius: 50%;
+  background: radial-gradient(circle, #fef08a, #f59e0b);
+  box-shadow: 0 0 8px #f59e0b;
+  opacity: 0.6;
+  animation: heatRise linear infinite;
+  pointer-events: none;
+}
+
+/* Rainbow for Sun & Rain Mix (Sunshower) */
+.sky-rainbow {
+  position: absolute;
+  top: 10%;
+  right: 5%;
+  width: 480px;
+  height: 240px;
+  border-radius: 240px 240px 0 0;
+  background: radial-gradient(circle at 50% 100%,
+    transparent 60%,
+    rgba(239, 68, 68, 0.32) 63%,
+    rgba(249, 115, 22, 0.32) 67%,
+    rgba(234, 179, 8, 0.32) 71%,
+    rgba(34, 197, 94, 0.32) 75%,
+    rgba(59, 130, 246, 0.32) 79%,
+    rgba(168, 85, 247, 0.32) 83%,
+    transparent 86%
+  );
+  filter: blur(1.5px);
+  opacity: 0.85;
+  animation: rainbowGlow 8s ease-in-out infinite alternate;
+  pointer-events: none;
+}
+
+/* Moon & Stars */
 .sky-moon {
   position: absolute; width: 60px; height: 60px; border-radius: 50%;
   background: #f8fafc;
   box-shadow: inset -15px -5px 0 0 #0f172a, 0 0 40px 10px rgba(248, 250, 252, 0.4);
   animation: float 8s ease-in-out infinite;
 }
+.sky-moon-warm {
+  background: #fffbeb;
+  box-shadow: inset -15px -5px 0 0 #1c0d02, 0 0 50px 15px rgba(251, 191, 36, 0.5);
+}
 .sky-star {
   position: absolute; width: 4px; height: 4px; border-radius: 50%;
   background: #fff; box-shadow: 0 0 10px 2px #fff;
   animation: twinkle 3s ease-in-out infinite alternate;
 }
+.sky-shooting-star {
+  position: absolute; width: 80px; height: 2px;
+  background: linear-gradient(90deg, rgba(255,255,255,0.9), transparent);
+  transform: rotate(-35deg); opacity: 0;
+  pointer-events: none;
+}
+.sky-shooting-star.active { animation: shootStar 0.8s ease-out; }
+
+/* Clouds */
 .sky-cloud {
-  position: absolute; background: rgba(255,255,255,0.9);
+  position: absolute; background: rgba(255,255,255,0.92);
   border-radius: 50px; filter: blur(2px);
   box-shadow: 0 10px 30px rgba(0,0,0,0.1);
   animation: drift linear infinite;
 }
-body.theme-night .sky-cloud { background: rgba(148, 163, 184, 0.15); filter: blur(4px); }
+.sky-cloud-back { filter: blur(4px); z-index: 0; }
+body.theme-night .sky-cloud { background: rgba(148, 163, 184, 0.2); filter: blur(4px); }
+
+/* Rain & Sun-rain */
 .sky-raindrop {
-  position: absolute; top: -10%; width: 2px; height: 20px; border-radius: 2px;
-  background: linear-gradient(180deg, rgba(255,255,255,0), rgba(255,255,255,.8));
+  position: absolute; top: -10%; width: 2px; height: 22px; border-radius: 2px;
+  background: linear-gradient(180deg, rgba(255,255,255,0), rgba(255,255,255,.85));
   animation: fall linear infinite;
 }
+.sky-raindrop-sun {
+  background: linear-gradient(180deg, rgba(255,255,255,0), rgba(254, 240, 138, 0.9));
+  box-shadow: 0 0 4px rgba(254, 240, 138, 0.5);
+}
+.sky-rain-splash {
+  position: absolute; border: 1.5px solid rgba(255,255,255,0.5); border-radius: 50%;
+  width: 14px; height: 5px; opacity: 0;
+  animation: splashRipple 1.2s ease-out infinite;
+}
+
+/* Snow */
 .sky-snowflake {
   position: absolute; top: -5%; width: 6px; height: 6px; border-radius: 50%;
   background: rgba(255,255,255,0.95); box-shadow: 0 0 5px #fff;
   animation: snowfall linear infinite;
 }
+
+/* Mist / Fog */
+.sky-mist-band {
+  position: absolute; left: -20%; width: 140%; height: 55px; border-radius: 50px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.22), transparent);
+  filter: blur(14px);
+  animation: mistDrift 16s ease-in-out infinite alternate;
+  pointer-events: none;
+}
+body.theme-night .sky-mist-band { background: linear-gradient(90deg, transparent, rgba(148, 163, 184, 0.12), transparent); }
+
+/* Lightning */
 .sky-lightning {
   position: absolute; inset: 0; background: #fff; opacity: 0;
 }
 .sky-lightning.flash { animation: flash 0.5s ease-out; }
 
+/* Keyframes */
 @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+@keyframes heatPulse { 0% { transform: scale(0.96); box-shadow: 0 0 70px 25px rgba(245, 158, 11, 0.7); } 100% { transform: scale(1.05); box-shadow: 0 0 120px 45px rgba(234, 88, 12, 0.6); } }
+@keyframes coronaPulse { 0% { transform: scale(0.9); opacity: 0.6; } 100% { transform: scale(1.15); opacity: 0.95; } }
+@keyframes sunRaySpin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+@keyframes heatRise { from { transform: translateY(0) scale(0.7); opacity: 0; } 20% { opacity: 0.8; } 80% { opacity: 0.6; } to { transform: translateY(-120px) scale(1.3); opacity: 0; } }
+@keyframes rainbowGlow { 0% { opacity: 0.65; transform: scale(0.98); } 100% { opacity: 0.92; transform: scale(1.02); } }
 @keyframes twinkle { 0% { opacity: 0.1; transform: scale(0.8); } 100% { opacity: 1; transform: scale(1.2); } }
-@keyframes drift { from { transform: translateX(-150px); } to { transform: translateX(calc(100vw + 150px)); } }
-@keyframes fall { from { transform: translateY(-20px); opacity: 0; } 10% { opacity: 1; } to { transform: translateY(300px); opacity: 0; } }
-@keyframes snowfall { from { transform: translate(0, -20px); opacity: 0; } 10% { opacity: 1; } to { transform: translate(25px, 250px); opacity: 0; } }
+@keyframes shootStar { 0% { transform: translate(0, 0) rotate(-35deg); opacity: 0; } 15% { opacity: 1; } 100% { transform: translate(240px, 140px) rotate(-35deg); opacity: 0; } }
+@keyframes drift { from { transform: translateX(-180px); } to { transform: translateX(calc(100vw + 180px)); } }
+@keyframes fall { from { transform: translateY(-20px); opacity: 0; } 10% { opacity: 1; } to { transform: translateY(320px); opacity: 0; } }
+@keyframes splashRipple { 0% { transform: scale(0.2); opacity: 0.8; } 100% { transform: scale(1.8); opacity: 0; } }
+@keyframes snowfall { from { transform: translate(0, -20px); opacity: 0; } 10% { opacity: 1; } to { transform: translate(30px, 280px); opacity: 0; } }
+@keyframes mistDrift { 0% { transform: translateX(-40px); } 100% { transform: translateX(40px); } }
 @keyframes flash { 0% { opacity: 0; } 10% { opacity: 0.9; } 20% { opacity: 0.2; } 30% { opacity: 0.7; } 100% { opacity: 0; } }
 
 /* ==========================================================================
@@ -336,13 +568,14 @@ body.theme-night .weather-glance .temp { background: linear-gradient(135deg, #ff
 .calendar-table th { font-family: var(--font-display); font-size: 0.9rem; color: var(--ink-soft); font-weight: 700; text-transform: uppercase; padding: 1rem 0; border: none; text-align: center; }
 .calendar-table td {
   background: var(--surface); backdrop-filter: var(--glass-blur); border: 1px solid var(--line);
-  border-radius: var(--radius-sm); height: 120px; padding: 0.5rem;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: var(--radius-sm); height: 115px; max-height: 115px; padding: 0.4rem 0.5rem;
+  vertical-align: top; overflow: hidden;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 .calendar-table td.empty { background: transparent; border: none; }
 .calendar-table td.empty-fill {
   background: var(--surface); backdrop-filter: var(--glass-blur); border: 1px solid var(--line);
-  border-radius: var(--radius-sm); height: 120px; padding: 0.5rem;
+  border-radius: var(--radius-sm); height: 115px; max-height: 115px; padding: 0.4rem 0.5rem;
   opacity: 0.35;
 }
 .calendar-table td.other-month {
@@ -351,13 +584,35 @@ body.theme-night .weather-glance .temp { background: linear-gradient(135deg, #ff
 .calendar-table td.today { background: rgba(245, 158, 11, 0.1); border-color: var(--accent); box-shadow: 0 4px 15px rgba(245, 158, 11, 0.1); }
 .calendar-table td:hover:not(.empty) { transform: scale(1.02); box-shadow: 0 10px 25px rgba(0,0,0,0.1); z-index: 10; position: relative; background: var(--surface-solid); }
 
-.day-number { font-family: var(--font-display); font-weight: 700; font-size: 1.1rem; color: var(--ink-soft); }
-.today .day-number { background: linear-gradient(135deg, var(--accent), #f97316); color: #fff; border-radius: 50%; width: 28px; height: 28px; display: inline-flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(245, 158, 11, 0.4); }
+.day-number { font-family: var(--font-display); font-weight: 700; font-size: 1.05rem; color: var(--ink-soft); }
+.today .day-number { background: linear-gradient(135deg, var(--accent), #f97316); color: #fff; border-radius: 50%; width: 26px; height: 26px; display: inline-flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(245, 158, 11, 0.4); }
 
-.day-cell-link { display: block; text-decoration: none; color: inherit; height: 100%; }
+.day-cell-link { display: flex; flex-direction: column; text-decoration: none; color: inherit; height: 100%; overflow: hidden; }
+.day-items-container {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 2px;
+  margin-top: 2px;
+}
+.day-items-container::-webkit-scrollbar {
+  width: 3px;
+}
+.day-items-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+.day-items-container::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.4);
+  border-radius: 4px;
+}
+.day-items-container::-webkit-scrollbar-thumb:hover {
+  background: var(--accent);
+}
+
 .mini-chip {
-  display: block; font-size: 0.7rem; font-weight: 600; padding: 0.2rem 0.5rem;
-  border-radius: 6px; margin-top: 0.3rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  display: block; font-size: 0.68rem; font-weight: 600; padding: 0.15rem 0.45rem;
+  border-radius: 6px; margin-top: 0.25rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   background: rgba(0,0,0,0.05);
 }
 body.theme-night .mini-chip { background: rgba(255,255,255,0.1); }

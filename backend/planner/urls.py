@@ -10,6 +10,7 @@ urlpatterns = [
     path('day/<int:year>/<int:month>/<int:day>/', views.day_detail, name='day_detail'),
     path('api/events/', views.calendar_events_api, name='events_api'),
     path('api/weather/', views.weather_api, name='weather_api'),
+    path('api/location-weather/', views.location_weather_api, name='location_weather_api'),
     path('event/add/', views.event_create, name='event_create'),
     path('event/<int:pk>/edit/', views.event_update, name='event_update'),
     path('event/<int:pk>/delete/', views.event_delete, name='event_delete'),

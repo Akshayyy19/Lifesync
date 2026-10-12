@@ -71,6 +71,8 @@ TEMPLATES = [
                 # Makes {{ unread_notifications_count }} available in every
                 # template so the navbar bell badge always stays in sync.
                 'notifications.context_processors.unread_count',
+                # Makes {{ weather }} available everywhere so base.html header sky matches current weather
+                'weather.context_processors.current_weather',
             ],
         },
     },

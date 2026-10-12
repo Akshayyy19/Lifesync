@@ -23,9 +23,21 @@
     const isDay = scene.dataset.isDay !== 'false';
 
     if (isDay) {
-      scene.appendChild(el('sky-sun', { width: '46px', height: '46px', top: '12%', right: '10%' }));
+      if (condition === 'hot-summer') {
+        scene.appendChild(el('sky-sun sky-sun-hot', { width: '46px', height: '46px', top: '12%', right: '10%' }));
+        for (let p = 0; p < 8; p++) {
+          scene.appendChild(el('sky-heat-particle', {
+            left: rand(5, 95) + '%',
+            bottom: rand(0, 40) + '%',
+            animationDuration: rand(3, 5) + 's',
+            animationDelay: rand(0, 3) + 's',
+          }));
+        }
+      } else {
+        scene.appendChild(el('sky-sun', { width: '46px', height: '46px', top: '12%', right: '10%' }));
+      }
     } else {
-      scene.appendChild(el('sky-moon', { width: '34px', height: '34px', top: '14%', right: '12%' }));
+      scene.appendChild(el('sky-moon' + (condition === 'hot-summer-night' ? ' sky-moon-warm' : ''), { width: '34px', height: '34px', top: '14%', right: '12%' }));
       for (let i = 0; i < 18; i++) {
         scene.appendChild(el('sky-star', {
           left: rand(2, 98) + '%', top: rand(4, 80) + '%',
@@ -34,7 +46,12 @@
       }
     }
 
-    const cloudCount = { cloudy: 4, rainy: 3, thunderstorm: 3, snowy: 2, misty: 5 }[condition] || 1;
+    if (condition === 'sun-rain-mix') {
+      const rainbow = el('sky-rainbow', { transform: 'scale(0.7)', transformOrigin: 'top right' });
+      scene.appendChild(rainbow);
+    }
+
+    const cloudCount = { cloudy: 4, 'sun-rain-mix': 2, rainy: 3, thunderstorm: 3, snowy: 2, misty: 4, 'hot-summer': 1 }[condition] || 1;
     for (let i = 0; i < cloudCount; i++) {
       const width = rand(50, 100);
       scene.appendChild(el('sky-cloud', {
@@ -45,7 +62,15 @@
       }));
     }
 
-    if (condition === 'rainy' || condition === 'thunderstorm') {
+    if (condition === 'sun-rain-mix') {
+      for (let i = 0; i < 20; i++) {
+        scene.appendChild(el('sky-raindrop sky-raindrop-sun', {
+          left: rand(0, 100) + '%',
+          animationDuration: rand(0.6, 1.0) + 's',
+          animationDelay: rand(0, 1.5) + 's',
+        }));
+      }
+    } else if (condition === 'rainy' || condition === 'thunderstorm') {
       for (let i = 0; i < 35; i++) {
         scene.appendChild(el('sky-raindrop', {
           left: rand(0, 100) + '%',
@@ -70,6 +95,7 @@
     document.querySelectorAll('.sky-scene-inline').forEach(populate);
     initCityAutocomplete();
     initPinnedCities();
+    initWeatherLiveClock();
   });
 
   function initCityAutocomplete() {
@@ -184,6 +210,78 @@
         }
       });
     }
+  }
+
+  function initWeatherLiveClock() {
+    const clockEl = document.getElementById('weatherLiveClock');
+    const heroStatClock = document.getElementById('heroStatLocalTime');
+    const chartBannerTime = document.getElementById('chartBannerLiveTime');
+    if (!clockEl && !heroStatClock && !chartBannerTime) return;
+
+    const tzSource = heroStatClock || clockEl || chartBannerTime;
+    const tz = (tzSource && tzSource.dataset.tz) ? tzSource.dataset.tz.trim() : '';
+    const offsetRaw = tzSource ? tzSource.dataset.offset : null;
+    const offsetSeconds = (offsetRaw !== null && offsetRaw !== undefined && offsetRaw !== '') ? parseInt(offsetRaw, 10) : null;
+
+    function getNowInLocation() {
+      if (tz) {
+        try {
+          const now = new Date();
+          const formatter = new Intl.DateTimeFormat('en-US', {
+            timeZone: tz,
+            hour: 'numeric',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: true,
+          });
+          return formatter.format(now);
+        } catch (e) {
+          // If timezone string isn't an IANA identifier, fall through to offset
+        }
+      }
+
+      if (offsetSeconds !== null && !isNaN(offsetSeconds)) {
+        const now = new Date();
+        const utcMs = now.getTime() + now.getTimezoneOffset() * 60000;
+        const targetDate = new Date(utcMs + offsetSeconds * 1000);
+        let h = targetDate.getHours();
+        const m = targetDate.getMinutes();
+        const s = targetDate.getSeconds();
+        const ampm = h >= 12 ? 'PM' : 'AM';
+        h = h % 12 || 12;
+        const mStr = m < 10 ? '0' + m : m;
+        const sStr = s < 10 ? '0' + s : s;
+        return `${h}:${mStr}:${sStr} ${ampm}`;
+      }
+
+      const now = new Date();
+      let h = now.getHours();
+      const m = now.getMinutes();
+      const s = now.getSeconds();
+      const ampm = h >= 12 ? 'PM' : 'AM';
+      h = h % 12 || 12;
+      const mStr = m < 10 ? '0' + m : m;
+      const sStr = s < 10 ? '0' + s : s;
+      return `${h}:${mStr}:${sStr} ${ampm}`;
+    }
+
+    function update() {
+      const fullTime = getNowInLocation();
+      if (clockEl) {
+        clockEl.textContent = fullTime;
+      }
+      // Without seconds for the compact hero stat and chart banner:
+      const shortTime = fullTime.replace(/:\d\d\s/, ' ');
+      if (heroStatClock) {
+        heroStatClock.textContent = shortTime;
+      }
+      if (chartBannerTime) {
+        chartBannerTime.textContent = shortTime;
+      }
+    }
+
+    update();
+    setInterval(update, 1000);
   }
 })();
 

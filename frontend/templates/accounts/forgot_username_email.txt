@@ -1,0 +1,17 @@
+Hello {{ user.get_username }},
+
+We received a request to retrieve the username associated with this email address for LifeSync.
+
+Your username is: {{ user.get_username }}
+
+You can log in to your account using the link below:
+{{ login_url }}
+
+If you also forgot your password, you can reset it here:
+{{ reset_url }}
+
+If you did not request this information, you can safely ignore this email.
+
+Best regards,
+The LifeSync Team
+Smart Calendar, Diary & Weather Assistant

@@ -29,7 +29,7 @@ class LoginForm(AuthenticationForm):
         widget=forms.TextInput(
             attrs={
                 'class': 'form-control',
-                'placeholder': 'Enter username or email',
+                'placeholder': 'Enter your username',
                 'autofocus': True,
                 'autocomplete': 'username',
             }

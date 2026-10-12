@@ -12,9 +12,11 @@ from django.contrib.auth import views as auth_views
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.models import User
 from django.contrib.auth.tokens import default_token_generator
+from django.core.mail import EmailMultiAlternatives
 from django.db.models import Count, Q
 from django.http import HttpResponseForbidden, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.template.loader import render_to_string
 from django.urls import reverse_lazy
 from django.utils import timezone
 from django.utils.http import urlsafe_base64_encode
@@ -116,6 +118,34 @@ def forgot_username(request):
                     request,
                     f"No LifeSync account was found associated with '{searched_email}'.",
                 )
+            else:
+                login_url = request.build_absolute_uri(reverse_lazy('accounts:login'))
+                reset_url = request.build_absolute_uri(reverse_lazy('accounts:password_reset'))
+                
+                # Send email notification for each found user
+                for user_item in found_users:
+                    context = {
+                        'user': user_item,
+                        'searched_email': searched_email,
+                        'login_url': login_url,
+                        'reset_url': reset_url,
+                    }
+                    text_content = render_to_string('accounts/forgot_username_email.txt', context)
+                    html_content = render_to_string('accounts/forgot_username_email.html', context)
+                    subject = "LifeSync - Your Username Recovery"
+                    from_email = getattr(settings, 'DEFAULT_FROM_EMAIL', 'LifeSync <noreply@lifesync.local>')
+
+                    msg = EmailMultiAlternatives(subject, text_content, from_email, [searched_email])
+                    msg.attach_alternative(html_content, "text/html")
+                    try:
+                        msg.send(fail_silently=False)
+                    except Exception:
+                        pass
+                
+                messages.success(
+                    request,
+                    f"We found account(s) linked to '{searched_email}' and sent the username details to your email."
+                )
     else:
         form = ForgotUsernameForm()
 
@@ -136,7 +166,8 @@ def forgot_username(request):
 # ------------------------------------------------------------------------------
 class CustomPasswordResetView(auth_views.PasswordResetView):
     template_name = 'accounts/password_reset.html'
-    email_template_name = 'accounts/password_reset_email.html'
+    email_template_name = 'accounts/password_reset_email.txt'
+    html_email_template_name = 'accounts/password_reset_email.html'
     subject_template_name = 'accounts/password_reset_subject.txt'
     form_class = CustomPasswordResetForm
     success_url = reverse_lazy('accounts:password_reset_done')

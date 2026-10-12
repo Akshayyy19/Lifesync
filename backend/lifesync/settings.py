@@ -159,9 +159,14 @@ DEFAULT_CITY = os.environ.get('DEFAULT_CITY', 'Chennai')
 # Set to True so new user registrations require explicit admin approval before logging in.
 ACCOUNT_APPROVAL_REQUIRED = os.environ.get('ACCOUNT_APPROVAL_REQUIRED', 'True') == 'True'
 
-# Password Reset Email Settings (Console backend by default for dev; outputs emails to terminal)
+# Email Settings (Console backend by default for local development; supports SMTP via .env)
 EMAIL_BACKEND = os.environ.get('EMAIL_BACKEND', 'django.core.mail.backends.console.EmailBackend')
 DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'LifeSync <noreply@lifesync.local>')
+EMAIL_HOST = os.environ.get('EMAIL_HOST', 'smtp.gmail.com')
+EMAIL_PORT = int(os.environ.get('EMAIL_PORT', 587))
+EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', 'True') == 'True'
+EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')
+EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
 
 # Map Django's message levels onto Bootstrap alert classes so
 # {% if message.tags %} renders the right colour automatically.

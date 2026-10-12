@@ -22,8 +22,9 @@ SECRET_KEY = os.environ.get(
 )
 DEBUG = os.environ.get('DEBUG', 'True') == 'True'
 ALLOWED_HOSTS = [h.strip() for h in os.environ.get(
-    'ALLOWED_HOSTS', 'localhost,127.0.0.1'
+    'ALLOWED_HOSTS', 'localhost,127.0.0.1,testserver'
 ).split(',') if h.strip()]
+
 
 # --------------------------------------------------------------------------
 # Applications
@@ -51,8 +52,14 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'accounts.middleware.UserAccessControlMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+]
+
+AUTHENTICATION_BACKENDS = [
+    'accounts.backends.EmailOrUsernameBackend',
+    'django.contrib.auth.backends.ModelBackend',
 ]
 
 ROOT_URLCONF = 'lifesync.urls'
@@ -71,6 +78,8 @@ TEMPLATES = [
                 # Makes {{ unread_notifications_count }} available in every
                 # template so the navbar bell badge always stays in sync.
                 'notifications.context_processors.unread_count',
+                # Makes {{ pending_users_count }} available to staff/admin navbar.
+                'accounts.context_processors.user_traffic_context',
                 # Makes {{ weather }} available everywhere so base.html header sky matches current weather
                 'weather.context_processors.current_weather',
             ],
@@ -146,6 +155,19 @@ LOGOUT_REDIRECT_URL = 'accounts:login'
 OPENWEATHERMAP_API_KEY = os.environ.get('OPENWEATHERMAP_API_KEY', '')
 DEFAULT_CITY = os.environ.get('DEFAULT_CITY', 'Chennai')
 
+# User Account Traffic & Admin Acceptance Controls
+# Set to True so new user registrations require explicit admin approval before logging in.
+ACCOUNT_APPROVAL_REQUIRED = os.environ.get('ACCOUNT_APPROVAL_REQUIRED', 'True') == 'True'
+
+# Email Settings (Console backend by default for local development; supports SMTP via .env)
+EMAIL_BACKEND = os.environ.get('EMAIL_BACKEND', 'django.core.mail.backends.console.EmailBackend')
+DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'LifeSync <noreply@lifesync.local>')
+EMAIL_HOST = os.environ.get('EMAIL_HOST', 'smtp.gmail.com')
+EMAIL_PORT = int(os.environ.get('EMAIL_PORT', 587))
+EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', 'True') == 'True'
+EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')
+EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
+
 # Map Django's message levels onto Bootstrap alert classes so
 # {% if message.tags %} renders the right colour automatically.
 MESSAGE_TAGS = {
@@ -155,3 +177,4 @@ MESSAGE_TAGS = {
     message_constants.WARNING: 'warning',
     message_constants.ERROR: 'danger',
 }
+

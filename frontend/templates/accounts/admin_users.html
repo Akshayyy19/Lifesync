@@ -1,0 +1,653 @@
+{% extends "base.html" %}
+{% block title %}User Traffic &amp; Access Control · LifeSync{% endblock %}
+
+{% block extra_head %}
+<style>
+/* ==========================================================================
+   Admin User Traffic UI Customizations & Micro-Interactions
+   ========================================================================== */
+
+/* Filter Tab Pills matching previous design */
+.filter-tab-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.44rem 1rem;
+  border-radius: var(--radius-sm);
+  font-weight: 500;
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+  text-decoration: none;
+  background: transparent;
+  border: 1px solid transparent;
+  transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.filter-tab-pill:hover {
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.09);
+  border-color: rgba(255, 255, 255, 0.18);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+}
+
+.filter-tab-pill.active {
+  background: #0d6efd !important;
+  color: #ffffff !important;
+  border-color: #0d6efd !important;
+  box-shadow: 0 4px 14px rgba(13, 110, 253, 0.4);
+}
+
+.filter-tab-pill.active:hover {
+  background: #0b5ed7 !important;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(13, 110, 253, 0.55);
+}
+
+.filter-tab-pill.active-warning {
+  background: #f59e0b !important;
+  color: #1e293b !important;
+  box-shadow: 0 4px 14px rgba(245, 158, 11, 0.4);
+}
+
+.filter-tab-pill.active-danger {
+  background: #ef4444 !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 14px rgba(239, 68, 68, 0.4);
+}
+
+/* White Pill Badges for Counts (from previous screenshot) */
+.white-pill-badge {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  font-weight: 700;
+  font-size: 0.72rem;
+  padding: 0.18rem 0.55rem;
+  border-radius: 999px;
+  margin-left: 0.45rem;
+  display: inline-block;
+  line-height: 1.15;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+  transition: transform 0.2s ease;
+}
+
+.filter-tab-pill:hover .white-pill-badge {
+  transform: scale(1.1);
+}
+
+/* Unified Search Capsule (Search icon, placeholder & button all inside) */
+.search-capsule {
+  display: flex;
+  align-items: center;
+  position: relative;
+  width: 100%;
+  background: rgba(15, 23, 42, 0.65);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 50px;
+  padding: 4px 5px 4px 16px;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  transition: all 0.25s ease;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+body:not(.theme-night) .search-capsule {
+  background: #ffffff;
+  border-color: rgba(0, 0, 0, 0.15);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.search-capsule:focus-within {
+  border-color: #f59e0b;
+  background: rgba(15, 23, 42, 0.9);
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.25), inset 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+body:not(.theme-night) .search-capsule:focus-within {
+  background: #ffffff;
+}
+
+.search-capsule-icon {
+  color: #94a3b8;
+  font-size: 0.95rem;
+  margin-right: 10px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+}
+
+.search-capsule-input {
+  flex: 1;
+  background: transparent !important;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  color: var(--ink) !important;
+  font-size: 0.86rem;
+  padding: 6px 0 !important;
+  min-width: 0;
+  line-height: 1.5;
+}
+
+.search-capsule-input::placeholder {
+  color: #94a3b8 !important;
+  opacity: 0.85;
+}
+
+.search-capsule-clear {
+  color: #94a3b8;
+  margin-right: 8px;
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.search-capsule-clear:hover {
+  color: #ef4444;
+}
+
+/* Orange Search Button Inside Search Bar */
+.search-capsule-btn {
+  background: linear-gradient(135deg, #f59e0b, #ea580c) !important;
+  color: #ffffff !important;
+  border: none !important;
+  border-radius: 50px !important;
+  padding: 6px 18px !important;
+  font-size: 0.825rem !important;
+  font-weight: 600 !important;
+  cursor: pointer;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.35);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.search-capsule-btn:hover {
+  transform: translateY(-1px) scale(1.02);
+  box-shadow: 0 5px 15px rgba(245, 158, 11, 0.55);
+  background: linear-gradient(135deg, #ea580c, #f59e0b) !important;
+}
+
+.search-capsule-btn:active {
+  transform: translateY(0) scale(0.98);
+}
+
+/* Table Header - Adaptable & Eye-Friendly (Soft slate in light mode, deep slate navy in dark mode) */
+.admin-table {
+  --bs-table-bg: transparent !important;
+  background-color: transparent !important;
+}
+
+.admin-table thead,
+.admin-table-head,
+.admin-table thead tr,
+.admin-table thead th,
+.admin-table th {
+  background-color: #f1f5f9 !important;
+  color: #475569 !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+  font-weight: 600 !important;
+  font-size: 0.74rem !important;
+  letter-spacing: 0.05em !important;
+  text-transform: uppercase !important;
+  padding-top: 0.95rem !important;
+  padding-bottom: 0.95rem !important;
+  box-shadow: none !important;
+}
+
+body.theme-night .admin-table thead,
+body.theme-night .admin-table-head,
+body.theme-night .admin-table thead tr,
+body.theme-night .admin-table thead th,
+body.theme-night .admin-table th,
+[data-bs-theme="dark"] .admin-table thead,
+[data-bs-theme="dark"] .admin-table-head,
+[data-bs-theme="dark"] .admin-table thead tr,
+[data-bs-theme="dark"] .admin-table thead th,
+[data-bs-theme="dark"] .admin-table th {
+  background-color: #182234 !important;
+  color: #94a3b8 !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+/* Action Button Micro-Interactions */
+.btn-action-hover {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn-action-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
+}
+
+.btn-action-hover:active {
+  transform: translateY(0);
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-0 px-md-2">
+  <!-- Page Header -->
+  <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3 mb-4">
+    <div>
+      <div class="d-flex align-items-center gap-2 mb-1">
+        <h1 class="h2 mb-0">User Traffic &amp; Access Control</h1>
+        <span class="badge bg-primary bg-opacity-15 text-primary border border-primary border-opacity-25 px-2 py-1">Admin Panel</span>
+      </div>
+      <p class="text-muted-soft mb-0 small">
+        Control user traffic, approve new member registrations, enforce account restrictions, and monitor activity.
+      </p>
+    </div>
+    <div class="d-flex align-items-center gap-2">
+      <a href="/admin/auth/user/" target="_blank" class="btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-1 shadow-sm btn-action-hover">
+        <i class="bi bi-speedometer2"></i> Django Admin <i class="bi bi-box-arrow-up-right ms-1" style="font-size: 0.7rem;"></i>
+      </a>
+      <form method="post" action="{% url 'accounts:logout' %}" class="d-inline m-0">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-outline-danger btn-sm d-inline-flex align-items-center gap-1 shadow-sm btn-action-hover" title="Log out from admin account">
+          <i class="bi bi-box-arrow-right"></i> Log out
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Metric Statistics Cards -->
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-md-4 col-lg">
+      <div class="card h-100 p-3 shadow-sm border-0" style="border-radius: var(--radius-sm); backdrop-filter: var(--glass-blur); background: var(--surface);">
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <span class="text-muted-soft small fw-medium">Total Users</span>
+          <div class="d-flex align-items-center justify-content-center rounded-circle flex-shrink-0" style="width: 36px; height: 36px; background: rgba(59, 130, 246, 0.15); color: #3b82f6;">
+            <i class="bi bi-people-fill"></i>
+          </div>
+        </div>
+        <div class="h3 mb-0 fw-bold font-display">{{ total_count }}</div>
+        <div class="text-muted-soft small" style="font-size: 0.75rem;">Registered accounts</div>
+      </div>
+    </div>
+
+    <div class="col-6 col-md-4 col-lg">
+      <div class="card h-100 p-3 shadow-sm border-0 {% if pending_count > 0 %}border-warning border-opacity-50{% endif %}" style="border-radius: var(--radius-sm); backdrop-filter: var(--glass-blur); background: var(--surface);">
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <span class="text-muted-soft small fw-medium">Pending Approval</span>
+          <div class="d-flex align-items-center justify-content-center rounded-circle flex-shrink-0" style="width: 36px; height: 36px; background: rgba(245, 158, 11, 0.18); color: #f59e0b;">
+            <i class="bi bi-hourglass-split"></i>
+          </div>
+        </div>
+        <div class="h3 mb-0 fw-bold font-display text-warning">{{ pending_count }}</div>
+        <div class="text-muted-soft small" style="font-size: 0.75rem;">
+          {% if pending_count > 0 %}
+          <span class="badge bg-warning text-dark">Action Required</span>
+          {% else %}
+          Queue all clear
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <div class="col-6 col-md-4 col-lg">
+      <div class="card h-100 p-3 shadow-sm border-0" style="border-radius: var(--radius-sm); backdrop-filter: var(--glass-blur); background: var(--surface);">
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <span class="text-muted-soft small fw-medium">Active Members</span>
+          <div class="d-flex align-items-center justify-content-center rounded-circle flex-shrink-0" style="width: 36px; height: 36px; background: rgba(16, 185, 129, 0.15); color: #10b981;">
+            <i class="bi bi-check-circle-fill"></i>
+          </div>
+        </div>
+        <div class="h3 mb-0 fw-bold font-display text-success">{{ active_count }}</div>
+        <div class="text-muted-soft small" style="font-size: 0.75rem;">Full platform access</div>
+      </div>
+    </div>
+
+    <div class="col-6 col-md-4 col-lg">
+      <div class="card h-100 p-3 shadow-sm border-0" style="border-radius: var(--radius-sm); backdrop-filter: var(--glass-blur); background: var(--surface);">
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <span class="text-muted-soft small fw-medium">Restricted</span>
+          <div class="d-flex align-items-center justify-content-center rounded-circle flex-shrink-0" style="width: 36px; height: 36px; background: rgba(239, 68, 68, 0.15); color: #ef4444;">
+            <i class="bi bi-shield-slash-fill"></i>
+          </div>
+        </div>
+        <div class="h3 mb-0 fw-bold font-display text-danger">{{ restricted_count }}</div>
+        <div class="text-muted-soft small" style="font-size: 0.75rem;">Suspended access</div>
+      </div>
+    </div>
+
+    <div class="col-6 col-md-4 col-lg">
+      <div class="card h-100 p-3 shadow-sm border-0" style="border-radius: var(--radius-sm); backdrop-filter: var(--glass-blur); background: var(--surface);">
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <span class="text-muted-soft small fw-medium">Administrators</span>
+          <div class="d-flex align-items-center justify-content-center rounded-circle flex-shrink-0" style="width: 36px; height: 36px; background: rgba(99, 102, 241, 0.18); color: #6366f1;">
+            <i class="bi bi-shield-shaded"></i>
+          </div>
+        </div>
+        <div class="h3 mb-0 fw-bold font-display" style="color: #6366f1;">{{ staff_count }}</div>
+        <div class="text-muted-soft small" style="font-size: 0.75rem;">Staff &amp; superusers</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filters & Search Toolbar -->
+  <div class="card p-3 mb-4 shadow-sm border-0" style="border-radius: var(--radius-sm); backdrop-filter: var(--glass-blur); background: var(--surface);">
+    <div class="row g-3 align-items-center justify-content-between">
+      <!-- Status Tabs matching previous layout with white pills & hover effects -->
+      <div class="col-12 col-lg-7">
+        <div class="d-flex flex-nowrap overflow-auto gap-2 pb-1 pb-lg-0" style="scrollbar-width: thin;">
+          <a class="filter-tab-pill {% if status_filter == 'all' %}active{% endif %}" href="?status=all{% if search_query %}&q={{ search_query }}{% endif %}">
+            All <span class="white-pill-badge">{{ total_count }}</span>
+          </a>
+          <a class="filter-tab-pill {% if status_filter == 'pending' %}active-warning{% endif %}" href="?status=pending{% if search_query %}&q={{ search_query }}{% endif %}">
+            <i class="bi bi-hourglass-split me-1"></i> Pending
+            {% if pending_count > 0 %}
+            <span class="badge bg-danger rounded-pill ms-2 px-2 py-1" style="font-size: 0.72rem;">{{ pending_count }}</span>
+            {% else %}
+            <span class="white-pill-badge">0</span>
+            {% endif %}
+          </a>
+          <a class="filter-tab-pill {% if status_filter == 'active' %}active{% endif %}" href="?status=active{% if search_query %}&q={{ search_query }}{% endif %}">
+            Active <span class="white-pill-badge">{{ active_count }}</span>
+          </a>
+          <a class="filter-tab-pill {% if status_filter == 'restricted' %}active-danger{% endif %}" href="?status=restricted{% if search_query %}&q={{ search_query }}{% endif %}">
+            Restricted <span class="white-pill-badge">{{ restricted_count }}</span>
+          </a>
+          <a class="filter-tab-pill {% if status_filter == 'staff' %}active{% endif %}" href="?status=staff{% if search_query %}&q={{ search_query }}{% endif %}">
+            Staff <span class="white-pill-badge">{{ staff_count }}</span>
+          </a>
+        </div>
+      </div>
+
+      <!-- Search Input (Unified Capsule: Icon, Placeholder, and Search Button all inside) -->
+      <div class="col-12 col-lg-5">
+        <form method="get" class="w-100">
+          <input type="hidden" name="status" value="{{ status_filter }}">
+          <div class="search-capsule">
+            <i class="bi bi-search search-capsule-icon"></i>
+            <input type="text" name="q" class="search-capsule-input" placeholder="Search by username, email, city..." value="{{ search_query }}" autocomplete="off">
+            {% if search_query %}
+            <a href="?status={{ status_filter }}" class="search-capsule-clear" title="Clear search"><i class="bi bi-x-circle-fill"></i></a>
+            {% endif %}
+            <button class="search-capsule-btn" type="submit">Search</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Users Table Card -->
+  <div class="card p-0 shadow-sm border-0 overflow-hidden mb-4" style="border-radius: var(--radius-sm); backdrop-filter: var(--glass-blur); background: var(--surface);">
+    <div class="table-responsive">
+      <table class="table admin-table align-middle mb-0">
+        <thead class="admin-table-head">
+          <tr>
+            <th class="ps-4 py-3">User Details</th>
+            <th class="py-3">Status</th>
+            <th class="py-3">Location</th>
+            <th class="py-3">Platform Activity</th>
+            <th class="py-3">Joined Date</th>
+            <th class="text-end pe-4 py-3">Control Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in user_list %}
+          <tr>
+            <!-- User Info -->
+            <td class="ps-4 py-3">
+              <div class="d-flex align-items-center gap-3">
+                <div class="rounded-circle d-flex align-items-center justify-content-center text-white fw-bold shadow-sm flex-shrink-0" 
+                     style="width: 42px; height: 42px; background: linear-gradient(135deg, {% if item.user.is_superuser %}#7c3aed, #4f46e5{% elif item.user.is_staff %}#0284c7, #2563eb{% elif item.profile.is_restricted %}#ef4444, #991b1b{% elif not item.profile.is_approved %}#f59e0b, #d97706{% else %}#10b981, #059669{% endif %});">
+                  {{ item.user.username|make_list|first|upper }}
+                </div>
+                <div>
+                  <div class="d-flex align-items-center gap-2">
+                    <span class="fw-bold">{{ item.user.username }}</span>
+                    {% if item.user.is_superuser %}
+                      <span class="badge text-white small" style="background-color: #6366f1;">Superuser</span>
+                    {% elif item.user.is_staff %}
+                      <span class="badge bg-info text-dark small">Staff Admin</span>
+                    {% endif %}
+                  </div>
+                  <div class="small text-muted-soft font-mono" style="font-size: 0.825rem;">
+                    <i class="bi bi-envelope me-1"></i>{{ item.user.email|default:"No email" }}
+                  </div>
+                </div>
+              </div>
+            </td>
+
+            <!-- Status Badge -->
+            <td class="py-3">
+              {% if item.profile.is_restricted %}
+                <span class="badge bg-danger d-inline-flex align-items-center gap-1 px-2 py-1">
+                  <i class="bi bi-shield-x"></i> Restricted
+                </span>
+                {% if item.profile.restriction_reason %}
+                <div class="x-small text-danger mt-1 text-truncate" style="max-width: 180px;" title="{{ item.profile.restriction_reason }}">
+                  <i class="bi bi-info-circle me-1"></i>{{ item.profile.restriction_reason }}
+                </div>
+                {% endif %}
+              {% elif not item.profile.is_approved %}
+                <span class="badge bg-warning text-dark d-inline-flex align-items-center gap-1 px-2 py-1">
+                  <i class="bi bi-hourglass-split"></i> Pending Approval
+                </span>
+              {% else %}
+                <span class="badge bg-success d-inline-flex align-items-center gap-1 px-2 py-1">
+                  <i class="bi bi-check-circle-fill"></i> Active
+                </span>
+              {% endif %}
+            </td>
+
+            <!-- Location -->
+            <td class="py-3">
+              <span class="d-inline-flex align-items-center gap-1 small">
+                <i class="bi bi-geo-alt text-primary"></i> <span>{{ item.profile.city|default:"Chennai" }}</span>
+              </span>
+            </td>
+
+            <!-- Activity Traffic Metrics (Dark & Light Mode Friendly) -->
+            <td class="py-3">
+              <div class="d-flex gap-2">
+                <span class="activity-badge" title="Calendar Events Created">
+                  <i class="bi bi-calendar-event text-primary"></i>
+                  <span>{{ item.event_count }} events</span>
+                </span>
+                <span class="activity-badge" title="Diary Entries Written">
+                  <i class="bi bi-journal-text text-success"></i>
+                  <span>{{ item.diary_count }} diaries</span>
+                </span>
+              </div>
+            </td>
+
+            <!-- Joined & Last Login -->
+            <td class="py-3">
+              <div class="small fw-medium">{{ item.user.date_joined|date:"M d, Y" }}</div>
+              <div class="x-small text-muted-soft" style="font-size: 0.775rem;">
+                Last: {% if item.user.last_login %}{{ item.user.last_login|timesince }} ago{% else %}Never{% endif %}
+              </div>
+            </td>
+
+            <!-- Actions Buttons with Hover Micro-Interactions -->
+            <td class="text-end pe-4 py-3">
+              <div class="d-inline-flex gap-1 align-items-center">
+                <!-- Accept / Approve Action -->
+                {% if not item.profile.is_approved or item.profile.is_restricted %}
+                <form method="post" action="{% url 'accounts:admin_user_action' item.user.id %}" class="d-inline">
+                  {% csrf_token %}
+                  <input type="hidden" name="action" value="approve">
+                  <button type="submit" class="btn btn-sm btn-success px-2 py-1 shadow-sm btn-action-hover" title="Accept &amp; Approve User">
+                    <i class="bi bi-check-lg"></i> Approve
+                  </button>
+                </form>
+                {% endif %}
+
+                <!-- Restrict / Unrestrict Actions -->
+                {% if not item.profile.is_restricted %}
+                  {% if item.user != request.user %}
+                  <button type="button" class="btn btn-sm btn-outline-warning px-2 py-1 btn-action-hover" 
+                          data-bs-toggle="modal" 
+                          data-bs-target="#restrictModal" 
+                          data-user-id="{{ item.user.id }}" 
+                          data-username="{{ item.user.username }}" 
+                          title="Restrict / Suspend User">
+                    <i class="bi bi-shield-slash"></i> Restrict
+                  </button>
+                  {% endif %}
+                {% else %}
+                <form method="post" action="{% url 'accounts:admin_user_action' item.user.id %}" class="d-inline">
+                  {% csrf_token %}
+                  <input type="hidden" name="action" value="unrestrict">
+                  <button type="submit" class="btn btn-sm btn-outline-primary px-2 py-1 btn-action-hover" title="Lift Restriction">
+                    <i class="bi bi-unlock"></i> Unrestrict
+                  </button>
+                </form>
+                {% endif %}
+
+                <!-- Toggle Staff Action (Superusers only) -->
+                {% if request.user.is_superuser and item.user != request.user %}
+                <form method="post" action="{% url 'accounts:admin_user_action' item.user.id %}" class="d-inline">
+                  {% csrf_token %}
+                  <input type="hidden" name="action" value="toggle_staff">
+                  <button type="submit" class="btn btn-sm {% if item.user.is_staff %}btn-outline-info{% else %}btn-outline-secondary{% endif %} px-2 py-1 btn-action-hover" 
+                          title="{% if item.user.is_staff %}Revoke Staff Role{% else %}Make Staff Admin{% endif %}">
+                    <i class="bi bi-star{% if item.user.is_staff %}-fill{% endif %}"></i>
+                  </button>
+                </form>
+                {% endif %}
+
+                <!-- Delete Action -->
+                {% if item.user != request.user %}
+                <button type="button" class="btn btn-sm btn-outline-danger px-2 py-1 btn-action-hover" 
+                        data-bs-toggle="modal" 
+                        data-bs-target="#deleteModal" 
+                        data-user-id="{{ item.user.id }}" 
+                        data-username="{{ item.user.username }}" 
+                        data-events="{{ item.event_count }}" 
+                        data-diaries="{{ item.diary_count }}" 
+                        title="Permanently Delete User">
+                  <i class="bi bi-trash"></i>
+                </button>
+                {% else %}
+                <span class="badge bg-secondary bg-opacity-25 text-muted-soft border border-secondary border-opacity-25 px-2 py-1 small">Current You</span>
+                {% endif %}
+              </div>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="6" class="text-center py-5 text-muted-soft">
+              <i class="bi bi-people fs-1 d-block mb-2 opacity-50"></i>
+              No user accounts found matching your filter criteria.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Restrict User Modal (Dark Mode Optimized) -->
+<div class="modal fade" id="restrictModal" tabindex="-1" aria-labelledby="restrictModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <form method="post" id="restrictForm" action="">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="restrict">
+        <div class="modal-header border-0 pb-0">
+          <h5 class="modal-title fw-bold text-warning" id="restrictModalLabel">
+            <i class="bi bi-shield-exclamation me-1"></i> Restrict User Account
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body py-3">
+          <p class="mb-3">
+            Are you sure you want to restrict <strong id="restrictModalUsername" class="font-mono"></strong>? 
+            Restricted users will be barred from logging in or accessing the LifeSync platform immediately.
+          </p>
+          <div class="mb-3">
+            <label for="restrictReasonInput" class="form-label small fw-semibold">Reason for Restriction (Optional):</label>
+            <input type="text" name="reason" id="restrictReasonInput" class="form-control" placeholder="e.g. Excessive automated traffic, spam, unverified credentials">
+            <div class="form-text small text-muted-soft">This reason will be displayed to the user when they attempt to log in.</div>
+          </div>
+        </div>
+        <div class="modal-footer border-0 pt-0">
+          <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-warning btn-sm text-dark fw-bold">
+            <i class="bi bi-shield-slash me-1"></i> Confirm Restriction
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Delete User Confirmation Modal (Dark Mode Optimized) -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <form method="post" id="deleteForm" action="">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="delete">
+        <div class="modal-header border-0 pb-0">
+          <h5 class="modal-title fw-bold text-danger" id="deleteModalLabel">
+            <i class="bi bi-exclamation-triangle-fill me-1"></i> Delete User Account
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body py-3">
+          <p class="mb-2">
+            Are you sure you want to permanently delete user <strong id="deleteModalUsername" class="text-danger font-mono"></strong>?
+          </p>
+          <div class="alert alert-danger p-2 small mb-0">
+            <i class="bi bi-exclamation-circle-fill me-1"></i>
+            <strong>Warning:</strong> This action is irreversible. All of this user's data (including <span id="deleteModalEvents">0</span> events and <span id="deleteModalDiaries">0</span> diary entries) will be permanently wiped from the database.
+          </div>
+        </div>
+        <div class="modal-footer border-0 pt-0">
+          <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-danger btn-sm fw-bold">
+            <i class="bi bi-trash-fill me-1"></i> Permanently Delete
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Setup Restrict Modal Dynamic Data
+  const restrictModal = document.getElementById('restrictModal');
+  if (restrictModal) {
+    restrictModal.addEventListener('show.bs.modal', function(event) {
+      const button = event.relatedTarget;
+      const userId = button.getAttribute('data-user-id');
+      const username = button.getAttribute('data-username');
+      const form = document.getElementById('restrictForm');
+      form.action = `/accounts/admin/users/${userId}/action/`;
+      document.getElementById('restrictModalUsername').textContent = '@' + username;
+      document.getElementById('restrictReasonInput').value = '';
+    });
+  }
+
+  // Setup Delete Modal Dynamic Data
+  const deleteModal = document.getElementById('deleteModal');
+  if (deleteModal) {
+    deleteModal.addEventListener('show.bs.modal', function(event) {
+      const button = event.relatedTarget;
+      const userId = button.getAttribute('data-user-id');
+      const username = button.getAttribute('data-username');
+      const events = button.getAttribute('data-events') || '0';
+      const diaries = button.getAttribute('data-diaries') || '0';
+      const form = document.getElementById('deleteForm');
+      form.action = `/accounts/admin/users/${userId}/action/`;
+      document.getElementById('deleteModalUsername').textContent = '@' + username;
+      document.getElementById('deleteModalEvents').textContent = events;
+      document.getElementById('deleteModalDiaries').textContent = diaries;
+    });
+  }
+});
+</script>
+{% endblock %}

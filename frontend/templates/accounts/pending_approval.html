@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Pending Approval · LifeSync{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-6 col-lg-5">
+    <div class="card p-4 mt-4 shadow-sm border-0 text-center" style="border-radius: var(--radius-md); backdrop-filter: var(--glass-blur); background: var(--surface);">
+      <div class="card-body">
+        <div class="d-inline-flex align-items-center justify-content-center bg-warning bg-opacity-20 text-warning rounded-circle mb-3" style="width: 72px; height: 72px;">
+          <i class="bi bi-hourglass-split fs-1"></i>
+        </div>
+
+        <h1 class="h3 mb-2">Registration Submitted!</h1>
+        <p class="text-muted-soft mb-4">
+          Welcome <strong>@{{ pending_username }}</strong>. Your account has been registered and is currently awaiting administrator review.
+        </p>
+
+        <div class="card bg-surface-alt border-0 text-start p-3 mb-4" style="border-radius: var(--radius-sm);">
+          <h6 class="fw-bold mb-2"><i class="bi bi-shield-check text-primary me-2"></i>Why is approval required?</h6>
+          <p class="small text-muted-soft mb-2">
+            To ensure the highest quality experience and prevent automated spam traffic, an administrator reviews and approves new member registrations.
+          </p>
+          <ul class="small text-muted-soft ps-3 mb-0">
+            <li>You will receive full access to Calendar, Diary &amp; Weather upon approval.</li>
+            <li>Admins are alerted whenever a new member registers.</li>
+          </ul>
+        </div>
+
+        <div class="d-flex flex-column gap-2">
+          <a href="{% url 'accounts:login' %}" class="btn btn-sky-cta w-100">
+            <i class="bi bi-box-arrow-in-right me-1"></i> Check Status &amp; Log In
+          </a>
+          <a href="{% url 'core:home' %}" class="btn btn-outline-secondary w-100">
+            <i class="bi bi-house me-1"></i> Return to Home
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

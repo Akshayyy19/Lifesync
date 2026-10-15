@@ -279,17 +279,25 @@
       const w = scales.stepX;
       s += `<rect x="${x}" y="${scales.top}" width="${w}" height="${scales.bottom - scales.top}" fill="rgba(15,23,42,0.08)" />`;
     });
-    // Label bands
+    // Label bands — pill backdrop + readable text for sunrise & sunset
     if (sunrise < data.length) {
       const ri = data.findIndex(d => (d.hour !== undefined ? d.hour : 0) >= Math.ceil(sunrise));
       if (ri >= 0) {
-        s += `<text class="chart-axis-label" x="${scales.x(ri) + 4}" y="${scales.top + 12}" fill="var(--accent)" opacity="0.6" font-size="9">\u2600\uFE0F ${srStr}</text>`;
+        const srLabelW = (srStr ? srStr.length : 5) * 6.8 + 24;
+        const srLx = scales.x(ri) + 2;
+        const srLy = scales.top + 2;
+        s += `<rect x="${srLx}" y="${srLy}" width="${srLabelW}" height="16" rx="4" fill="var(--surface-solid,#1e293b)" opacity="0.82"/>`;
+        s += `<text class="chart-axis-label" x="${srLx + 5}" y="${srLy + 11.5}" fill="var(--accent)" opacity="1" font-size="11" font-weight="600">\u2600\uFE0F ${srStr}</text>`;
       }
     }
     if (sunset < data.length) {
       const si = data.findIndex(d => (d.hour !== undefined ? d.hour : 0) >= Math.floor(sunset));
       if (si >= 0) {
-        s += `<text class="chart-axis-label" x="${scales.x(si) + 4}" y="${scales.top + 12}" fill="var(--ink-soft)" opacity="0.6" font-size="9">\uD83C\uDF19 ${ssStr}</text>`;
+        const ssLabelW = (ssStr ? ssStr.length : 5) * 6.8 + 24;
+        const ssLx = scales.x(si) + 2;
+        const ssLy = scales.top + 2;
+        s += `<rect x="${ssLx}" y="${ssLy}" width="${ssLabelW}" height="16" rx="4" fill="var(--surface-solid,#1e293b)" opacity="0.82"/>`;
+        s += `<text class="chart-axis-label" x="${ssLx + 5}" y="${ssLy + 11.5}" fill="var(--ink-soft,#94a3b8)" opacity="1" font-size="11" font-weight="600">\uD83C\uDF19 ${ssStr}</text>`;
       }
     }
     return s;

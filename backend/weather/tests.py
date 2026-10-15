@@ -78,6 +78,8 @@ class WeatherPageTests(TestCase):
 
     def setUp(self):
         self.user = User.objects.create_user('weathertestuser', password='not-a-real-password-123')
+        self.user.profile.is_approved = True
+        self.user.profile.save()
         self.client.force_login(self.user)
 
     def test_every_tab_renders_ok(self, *mocks):

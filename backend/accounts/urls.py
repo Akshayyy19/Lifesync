@@ -18,10 +18,7 @@ urlpatterns = [
     path('pending-approval/<str:username>/', views.pending_approval, name='pending_approval'),
 
     # Authentication
-    path('login/', auth_views.LoginView.as_view(
-        template_name='accounts/login.html',
-        authentication_form=LoginForm,
-    ), name='login'),
+    path('login/', views.CustomLoginView.as_view(), name='login'),
     path('logout/', views.logout_view, name='logout'),
 
     # Profile & Theme

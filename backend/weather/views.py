@@ -37,7 +37,7 @@ from .services import (
 @login_required
 def weather_index(request):
     # Fetch user's home/default city from their Profile model; fallback to 'Chennai'
-    default_city = getattr(request.user.profile, 'city', None) or 'Chennai'
+    default_city = getattr(getattr(request.user, 'profile', None), 'city', None) or 'Chennai'
 
     # Retrieve previously saved city quick-buttons stored in the user's session
     saved_cities = request.session.get('saved_weather_cities', [])

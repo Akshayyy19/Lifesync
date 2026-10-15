@@ -32,8 +32,9 @@ from .models import DiaryEntry
 def _attach_weather_snapshot(entry, user):
     """Best-effort: silently skip if the API/profile isn't available."""
     try:
-        # Retrieve user's configured city from their profile
-        city = user.profile.city
+        # Retrieve user's configured city from their profile with safe fallback
+        profile = getattr(user, 'profile', None)
+        city = getattr(profile, 'city', None) or 'Chennai'
         # Query current live weather data for this city
         weather = get_current_weather(city)
         if weather:

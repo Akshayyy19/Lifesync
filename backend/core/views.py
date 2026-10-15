@@ -60,7 +60,8 @@ def dashboard(request):
     today = timezone.localdate()
 
     # Retrieve user's configured city from their profile model; fallback to 'Chennai' if not set
-    city = getattr(request.user.profile, 'city', None) or 'Chennai'
+    profile = getattr(request.user, 'profile', None)
+    city = getattr(profile, 'city', None) or 'Chennai'
 
     # Fetch live weather information (temperature, condition, icons) for the city
     weather = get_current_weather(city)

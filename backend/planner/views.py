@@ -55,7 +55,7 @@ def _attach_weather_snapshot(event, user):
     """Best-effort: fetch predicted/actual weather for event date and snapshot it."""
     try:
         # Get user's preferred city or fallback to 'Chennai'
-        city = getattr(user.profile, 'city', None) or 'Chennai'
+        city = getattr(getattr(user, 'profile', None), 'city', None) or 'Chennai'
         # Fetch weather data for the specific event date
         weather = get_weather_for_date(city, event.date)
         if weather:
@@ -226,7 +226,7 @@ def calendar_view(request, year=None, month=None, day=None):
         context_day = {}
 
     # Fetch today's live weather to show a badge in the calendar header
-    city = getattr(request.user.profile, 'city', None) or 'Chennai'
+    city = getattr(getattr(request.user, 'profile', None), 'city', None) or 'Chennai'
     try:
         today_weather = get_current_weather(city)
     except Exception:
@@ -274,7 +274,7 @@ def day_detail(request, year, month, day):
     )
 
     # Get user city and fetch detailed weather metrics & hourly timeline for this day
-    city = getattr(request.user.profile, 'city', None) or 'Chennai'
+    city = getattr(getattr(request.user, 'profile', None), 'city', None) or 'Chennai'
     day_weather = get_weather_for_date(city, day_date)
     day_timeline = get_day_weather_timeline(city, day_date)
 
@@ -324,7 +324,7 @@ def event_create(request):
 
     # Fetch predicted weather for the chosen target date to show a preview while creating
     target_date_str = form.initial.get('date') or timezone.localdate().strftime('%Y-%m-%d')
-    city = getattr(request.user.profile, 'city', None) or 'Chennai'
+    city = getattr(getattr(request.user, 'profile', None), 'city', None) or 'Chennai'
     predicted_weather = get_weather_for_date(city, target_date_str)
 
     return render(request, 'planner/event_form.html', {
@@ -358,7 +358,7 @@ def event_update(request, pk):
         # Pre-populate form with existing event attributes
         form = EventForm(instance=event)
 
-    city = getattr(request.user.profile, 'city', None) or 'Chennai'
+    city = getattr(getattr(request.user, 'profile', None), 'city', None) or 'Chennai'
     predicted_weather = get_weather_for_date(city, event.date)
 
     return render(request, 'planner/event_form.html', {
@@ -450,7 +450,7 @@ def weather_api(request):
     if not date_str:
         return JsonResponse({'error': 'date required'}, status=400)
     
-    city = getattr(request.user.profile, 'city', None) or 'Chennai'
+    city = getattr(getattr(request.user, 'profile', None), 'city', None) or 'Chennai'
     try:
         from weather.services import get_weather_for_date
         weather = get_weather_for_date(city, date_str)

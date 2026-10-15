@@ -4,12 +4,13 @@
 #              profile settings, and admin user traffic control.
 # ==============================================================================
 
+from functools import wraps
 import json
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import login, logout
 from django.contrib.auth import views as auth_views
-from django.contrib.auth.decorators import login_required, user_passes_test
+from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.contrib.auth.tokens import default_token_generator
 from django.core.mail import EmailMultiAlternatives
@@ -31,6 +32,59 @@ from .forms import (
     RegisterForm,
 )
 from .models import Profile
+
+
+# ------------------------------------------------------------------------------
+# Decorator: admin_required
+# Purpose: Strictly restricts view access to staff and superuser administrators.
+#          Redirects non-admin members safely to their dashboard with clear feedback
+#          to prevent login loops or cached admin leakage.
+# ------------------------------------------------------------------------------
+def admin_required(view_func):
+    """
+    Decorator for views requiring administrator (staff or superuser) privileges.
+    - If user is not authenticated: redirects to login with ?next=<path>.
+    - If user is authenticated as regular member (non-admin):
+      immediately redirects to 'core:dashboard' with an 'Access Denied' error message,
+      preventing redirect loops, login page confusion, and back-button leakage.
+    """
+    @wraps(view_func)
+    def _wrapped_view(request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return redirect(f"{reverse_lazy('accounts:login')}?next={request.path}")
+        if not (request.user.is_staff or request.user.is_superuser):
+            messages.error(
+                request,
+                "Access Denied: You do not have administrator permissions to access that page."
+            )
+            return redirect('core:dashboard')
+        return view_func(request, *args, **kwargs)
+    return _wrapped_view
+
+
+# ------------------------------------------------------------------------------
+# View: CustomLoginView
+# Purpose: Enhanced login view with dual-account session isolation & auto-redirect.
+# ------------------------------------------------------------------------------
+class CustomLoginView(auth_views.LoginView):
+    """
+    Enhanced LoginView:
+    1. Sets redirect_authenticated_user = True:
+       If a user is already authenticated (admin or member) and visits or backs into
+       the login page, they are immediately redirected to their dashboard,
+       preventing stale login forms or unintentional dual-session submissions.
+    2. Flushes the session on valid authentication:
+       Clears all previous session variables, tokens, and cookies before creating
+       the new authenticated session to prevent cross-account pollution.
+    """
+    template_name = 'accounts/login.html'
+    authentication_form = LoginForm
+    redirect_authenticated_user = True
+
+    def form_valid(self, form):
+        # Explicitly flush previous session to prevent cross-account data leakage
+        self.request.session.flush()
+        return super().form_valid(form)
 
 
 # ------------------------------------------------------------------------------
@@ -212,8 +266,7 @@ class CustomPasswordResetDoneView(auth_views.PasswordResetDoneView):
 # View: admin_users (User Traffic & Access Control Dashboard)
 # Purpose: Gives admins complete control over user approvals, restrictions & traffic.
 # ------------------------------------------------------------------------------
-@login_required
-@user_passes_test(lambda u: u.is_staff or u.is_superuser)
+@admin_required
 def admin_users(request):
     status_filter = request.GET.get('status', 'all').lower()
     search_query = request.GET.get('q', '').strip()
@@ -279,8 +332,7 @@ def admin_users(request):
 # View: admin_user_action
 # Purpose: Executes user acceptance, restriction, unrestriction, role toggle, or deletion.
 # ------------------------------------------------------------------------------
-@login_required
-@user_passes_test(lambda u: u.is_staff or u.is_superuser)
+@admin_required
 @require_POST
 def admin_user_action(request, user_id):
     target_user = get_object_or_404(User, pk=user_id)
@@ -384,7 +436,7 @@ def admin_user_action(request, user_id):
 # ------------------------------------------------------------------------------
 @login_required
 def profile(request):
-    profile_obj = request.user.profile
+    profile_obj, _ = Profile.objects.get_or_create(user=request.user)
 
     if request.method == 'POST':
         form = ProfileForm(request.POST, instance=profile_obj)
@@ -412,7 +464,7 @@ def toggle_theme(request):
         theme = request.POST.get('theme')
 
     if theme in ('day', 'night', 'auto'):
-        profile_obj = request.user.profile
+        profile_obj, _ = Profile.objects.get_or_create(user=request.user)
         profile_obj.theme_preference = theme
         profile_obj.save(update_fields=['theme_preference'])
         return JsonResponse({'status': 'ok', 'theme_preference': theme})
@@ -424,6 +476,7 @@ def toggle_theme(request):
 # View: logout_view
 # Purpose: Logs out the user and redirects to login page with feedback.
 #          Accepts both GET and POST requests for seamless exit from admin and navbar.
+#          Flushes the session completely and applies strict no-cache headers.
 # ------------------------------------------------------------------------------
 def logout_view(request):
     if request.user.is_authenticated:
@@ -432,4 +485,9 @@ def logout_view(request):
         messages.info(request, f"You have been safely logged out, @{username}.")
     else:
         logout(request)
-    return redirect('accounts:login')
+    request.session.flush()
+    response = redirect('accounts:login')
+    response['Cache-Control'] = 'no-cache, no-store, must-revalidate, private, max-age=0'
+    response['Pragma'] = 'no-cache'
+    response['Expires'] = '0'
+    return response

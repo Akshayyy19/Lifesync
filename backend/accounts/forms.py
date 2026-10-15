@@ -48,7 +48,7 @@ class LoginForm(AuthenticationForm):
     )
 
     def clean(self):
-        username_or_email = self.cleaned_data.get('username')
+        username_or_email = (self.cleaned_data.get('username') or '').strip()
         password = self.cleaned_data.get('password')
 
         if username_or_email and password:
@@ -61,23 +61,22 @@ class LoginForm(AuthenticationForm):
                 # Verify password validity
                 if user_obj.check_password(password):
                     # Check profile restrictions & approval
-                    if hasattr(user_obj, 'profile'):
-                        profile = user_obj.profile
-                        if profile.is_restricted:
-                            reason = (
-                                profile.restriction_reason.strip()
-                                or "No specific reason provided."
-                            )
-                            raise ValidationError(
-                                f"Access Restricted: Your account has been suspended by an administrator. Reason: {reason}. Please contact support.",
-                                code='restricted',
-                            )
+                    profile, _ = Profile.objects.get_or_create(user=user_obj)
+                    if profile.is_restricted:
+                        reason = (
+                            profile.restriction_reason.strip()
+                            or "No specific reason provided."
+                        )
+                        raise ValidationError(
+                            f"Access Restricted: Your account has been suspended by an administrator. Reason: {reason}. Please contact support.",
+                            code='restricted',
+                        )
 
-                        if not profile.is_approved:
-                            raise ValidationError(
-                                "Account Pending Approval: Your registration is currently awaiting administrator review. You will be able to log in once an admin accepts your request.",
-                                code='pending_approval',
-                            )
+                    if not profile.is_approved:
+                        raise ValidationError(
+                            "Account Pending Approval: Your registration is currently awaiting administrator review. You will be able to log in once an admin accepts your request.",
+                            code='pending_approval',
+                        )
 
                     if not user_obj.is_active:
                         raise ValidationError(

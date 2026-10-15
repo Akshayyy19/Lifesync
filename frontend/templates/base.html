@@ -4,6 +4,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <title>{% block title %}LifeSync{% endblock %} · Smart Calendar, Diary &amp; Weather</title>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -217,6 +220,27 @@ window.updateThemeIcons = function(isDark) {
 };
 </script>
 <script src="{% static 'js/theme.js' %}"></script>
+<script>
+// Security BFCache Buster:
+// When navigating via browser Back/Forward buttons, prevent browser from restoring
+// a stale DOM snapshot from memory cache. Forces fresh validation against server.
+window.addEventListener('pageshow', function (event) {
+  var isBackForward = event.persisted;
+  if (!isBackForward && window.performance) {
+    if (window.performance.getEntriesByType) {
+      var navEntries = window.performance.getEntriesByType('navigation');
+      if (navEntries && navEntries.length > 0 && navEntries[0].type === 'back_forward') {
+        isBackForward = true;
+      }
+    } else if (window.performance.navigation && window.performance.navigation.type === 2) {
+      isBackForward = true;
+    }
+  }
+  if (isBackForward) {
+    window.location.reload();
+  }
+});
+</script>
 {% block extra_js %}{% endblock %}
 </body>
 </html>
